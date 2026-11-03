@@ -372,19 +372,15 @@ function App() {
 
           {/* Conditional page rendering */}
           <div className="mx-auto max-w-7xl p-4 sm:p-8">
-            {activePage === 'Faculty' ? (
-              <FacultyPage />
-            ) : activePage === 'Rooms & Labs' ? (
-              <RoomsPage />
-            ) : activePage === 'Timetable' ? (
-              <TimetablePage />
-            ) : activePage === 'Sections' ?(
-              <SectionsPage />
-            ) : activePage === 'SectionsPage' ?(
-              <SectionsPage />
-            ) :(
-              <DashboardContent onNavigate={navigateTo} />
-            )}
+            {activePage === 'Faculty' && <FacultyPage />}
+{activePage === 'Rooms & Labs' && <RoomsPage />}
+{activePage === 'Timetable' && <TimetablePage />}
+{activePage === 'Sections' && <SectionsPage />}
+{activePage === 'Subjects' && <SubjectsPage />}
+{activePage === 'Settings' && (
+  <p className="text-slate-500">Settings coming soon.</p>
+)}
+{activePage === 'Overview' && <DashboardContent onNavigate={navigateTo} />}
           </div>
         </main>
       </div>
