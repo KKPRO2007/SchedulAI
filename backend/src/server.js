@@ -2,6 +2,10 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { pool } from './db.js';
+import facultyRoutes from './routes/faculty.js';
+import roomsRoutes from './routes/rooms.js';
+import sectionsRoutes from './routes/sections.js';
+import subjectsRoutes from './routes/subjects.js';
 
 dotenv.config();
 
@@ -17,6 +21,23 @@ app.get('/api/health', async (req, res) => {
     res.status(500).json({ status: 'error', database: 'disconnected' });
   }
 });
+
+app.use('/api/faculty', facultyRoutes);
+app.use('/api/rooms', roomsRoutes);
+app.use('/api/sections', sectionsRoutes);
+app.use('/api/subjects', subjectsRoutes);
+
+app.use((err, req, res, next) => {
+  if (err.code === '23505') {
+    return res.status(409).json({ error: 'A record with this value already exists' });
+  }
+  if (err.code === '23514' || err.code === '23502' || err.code === '22P02') {
+    return res.status(400).json({ error: 'Invalid data' });
+  }
+  console.error(err);
+  res.status(500).json({ error: 'Server error' });
+});
+
 
 const port = process.env.PORT || 4000;
 app.listen(port, () => {
