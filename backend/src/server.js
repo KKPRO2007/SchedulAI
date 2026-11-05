@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import fs from 'fs';
 import dotenv from 'dotenv';
 import { pool } from './db.js';
 import facultyRoutes from './routes/faculty.js';
@@ -38,8 +39,10 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Server error' });
 });
 
+const schema = fs.readFileSync(new URL('../sql/schema.sql', import.meta.url), 'utf8');
+await pool.query(schema).catch((err) => console.error('Schema setup failed:', err.message));
 
-const port = process.env.PORT || 4000;
+const port = process.env.PORT;
 app.listen(port, () => {
   console.log(`SchedulAI API running on http://localhost:${port}`);
 });
