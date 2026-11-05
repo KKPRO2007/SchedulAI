@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import { pool } from './db.js';
 import facultyRoutes from './routes/faculty.js';
 import roomsRoutes from './routes/rooms.js';
+import statsRoutes from './routes/stats.js';
 import sectionsRoutes from './routes/sections.js';
 import subjectsRoutes from './routes/subjects.js';
 
@@ -25,6 +26,7 @@ app.get('/api/health', async (req, res) => {
 
 app.use('/api/faculty', facultyRoutes);
 app.use('/api/rooms', roomsRoutes);
+app.use('/api/stats', statsRoutes);
 app.use('/api/sections', sectionsRoutes);
 app.use('/api/subjects', subjectsRoutes);
 
