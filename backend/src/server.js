@@ -8,12 +8,13 @@ import roomsRoutes from './routes/rooms.js';
 import statsRoutes from './routes/stats.js';
 import sectionsRoutes from './routes/sections.js';
 import subjectsRoutes from './routes/subjects.js';
+import authRoutes from './routes/auth.js';
 
 dotenv.config();
 
 const app = express();
 app.use(cors({ origin: process.env.FRONTEND_URL }));
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 
 app.get('/api/health', async (req, res) => {
   try {
@@ -24,6 +25,7 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
+app.use('/api/auth', authRoutes);
 app.use('/api/faculty', facultyRoutes);
 app.use('/api/rooms', roomsRoutes);
 app.use('/api/stats', statsRoutes);
