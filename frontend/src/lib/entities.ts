@@ -69,6 +69,8 @@ export const ENTITIES: Record<EntityKey, EntityDef> = {
       { key: 'email', label: 'Email', kind: 'email', required: true, placeholder: 'name@college.edu', synonyms: ['faculty email', 'teacher email', 'email', 'e-mail', 'mail', 'mail id', 'email id', 'email address', 'official email'] },
       { ...department },
       { key: 'designation', label: 'Designation', kind: 'text', placeholder: 'e.g. Assistant Professor', synonyms: ['designation', 'title', 'position', 'rank', 'post', 'role'] },
+      { key: 'maxWorkload', label: 'Max hours / week', kind: 'number', min: 1, max: 40, synonyms: ['max workload', 'max load', 'max hours', 'workload limit', 'teaching load', 'weekly load'] },
+      { key: 'preferredWindow', label: 'Preferred window', kind: 'select', options: ['any', 'morning', 'afternoon'], synonyms: ['preferred window', 'preferred time', 'preferred slot', 'time preference', 'slot preference'] },
       { key: 'available', label: 'Available', kind: 'bool', synonyms: ['available', 'availability', 'active', 'status', 'on duty'] },
     ],
   },
@@ -97,7 +99,7 @@ export const ENTITIES: Record<EntityKey, EntityDef> = {
       { ...department },
       { ...semester },
       { key: 'students', label: 'Students', kind: 'number', required: true, min: 1, synonyms: ['students', 'student count', 'no of students', 'number of students', 'strength', 'class strength', 'enrolled', 'enrollment', 'headcount', 'size'] },
-      { key: 'shift', label: 'Shift', kind: 'select', options: ['Shift 1', 'Shift 2'], synonyms: ['shift', 'session', 'timing', 'slot'] },
+      { key: 'shift', label: 'Shift', kind: 'select', options: ['Shift 1', 'Shift 2', 'Shift 3', 'Shift 4'], synonyms: ['shift', 'session', 'timing', 'slot'] },
     ],
   },
   subjects: {
@@ -135,6 +137,11 @@ export function normalizeRecord(entity: EntityKey, raw: Record<string, unknown>)
   if (entity === 'subjects' && typeof r.code === 'string') r.code = r.code.toUpperCase();
   if (entity === 'sections' && isBlank(r.shift)) r.shift = 'Shift 1';
   if (entity === 'faculty' && isBlank(r.designation)) r.designation = null;
+  if (entity === 'faculty') {
+    r.maxWorkload = isBlank(r.maxWorkload) ? 18 : Number(r.maxWorkload);
+    const w = String(r.preferredWindow ?? '').toLowerCase();
+    r.preferredWindow = /morn|\bam\b|early/.test(w) ? 'morning' : /after|\bpm\b|even|late/.test(w) ? 'afternoon' : 'any';
+  }
   return r;
 }
 
@@ -146,6 +153,7 @@ export function validateRecord(entity: EntityKey, r: Record<string, unknown>): s
     case 'faculty':
       if (isBlank(r.name) || isBlank(r.email) || isBlank(r.department)) return 'Name, email and department are required';
       if (!String(r.email).includes('@')) return 'Enter a valid email';
+      if (!(Number(r.maxWorkload ?? 18) >= 1 && Number(r.maxWorkload ?? 18) <= 40)) return 'Max workload must be 1 to 40 hours';
       return null;
     case 'rooms':
       if (isBlank(r.name) || isBlank(r.building)) return 'Name and building are required';

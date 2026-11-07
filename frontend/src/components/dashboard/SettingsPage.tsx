@@ -4,7 +4,8 @@ import { useDataMode, notifyDataChanged } from '../../lib/useData';
 import { resetLocalDb } from '../../lib/localDb';
 import { DEMO_ACCOUNTS } from '../../lib/auth';
 import { toast } from '../../lib/toast';
-import { clearTimetable as clearSavedTimetable } from '../../lib/scheduler';
+import { clearAssignments } from '../../lib/scheduler';
+import { notifyWorkflow } from '../../lib/workflow';
 
 export default function SettingsPage() {
   const mode = useDataMode();
@@ -12,7 +13,8 @@ export default function SettingsPage() {
   const forced = localStorage.getItem('schedulai.mode') === 'local';
 
   function clearTimetable() {
-    clearSavedTimetable();
+    clearAssignments();
+    notifyWorkflow();
     toast('Timetable and saved allocations cleared', 'info');
   }
 
@@ -78,7 +80,7 @@ export default function SettingsPage() {
         <p className="text-sm text-[var(--text-muted)]">{local ? 'Affects only this browser.' : 'Browser data resets do not touch the PostgreSQL database.'}</p>
         <div className="mt-5 flex flex-wrap gap-3">
           <button onClick={clearTimetable} className="btn btn-ghost">
-            <RotateCcw size={16} /> Clear generated timetable
+            <RotateCcw size={16} /> Clear imported teaching allocations
           </button>
           {local && (
             <>

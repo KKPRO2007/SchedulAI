@@ -1,7 +1,7 @@
-import { LogOut, ShieldCheck, UserRound } from 'lucide-react';
+import { BookUser, LogOut, ShieldCheck, UserRound, Workflow } from 'lucide-react';
 import Logo from '../fx/Logo';
-import { navFor, type PageId } from './nav';
-import { logout, useSession } from '../../lib/auth';
+import { GROUPS, navFor, type PageId } from './nav';
+import { logout, ROLE_LABEL, useSession } from '../../lib/auth';
 import { navigate } from '../../lib/router';
 
 export default function Sidebar({ active, open, onClose }: { active: PageId; open: boolean; onClose: () => void }) {
@@ -17,7 +17,9 @@ export default function Sidebar({ active, open, onClose }: { active: PageId; ope
     .slice(0, 2)
     .toUpperCase();
   const items = navFor(role);
-  const groups = (['Workspace', 'Data', 'System'] as const).filter((g) => items.some((i) => i.group === g));
+  const groups = GROUPS.filter((g) => items.some((i) => i.group === g));
+  const RoleIcon = role === 'admin' ? ShieldCheck : role === 'coordinator' ? Workflow : role === 'faculty' ? UserRound : BookUser;
+  const readOnly = role === 'student' || role === 'faculty';
 
   return (
     <>
@@ -27,14 +29,14 @@ export default function Sidebar({ active, open, onClose }: { active: PageId; ope
       >
         <div className="flex h-20 items-center px-6">
           <a href="#/" aria-label="Home">
-            <Logo size={38} sub={role === 'faculty' ? 'Faculty portal' : 'Admin workspace'} />
+            <Logo size={38} sub={`${ROLE_LABEL[role]} workspace`} />
           </a>
         </div>
 
         <div className="mx-4 mb-2 flex items-center gap-2 rounded-xl border border-white/5 bg-white/[0.03] px-3 py-2 text-xs text-[var(--text-secondary)]">
-          {role === 'faculty' ? <UserRound size={14} className="text-sky-300" /> : <ShieldCheck size={14} className="text-violet-300" />}
-          Signed in as <span className="font-semibold text-white">{role === 'faculty' ? 'Faculty' : 'Admin'}</span>
-          {role === 'faculty' && <span className="ml-auto text-[10px] text-[var(--text-muted)]">read-only</span>}
+          <RoleIcon size={14} className="text-violet-300" />
+          Signed in as <span className="font-semibold text-white">{ROLE_LABEL[role]}</span>
+          {readOnly && <span className="ml-auto text-[10px] text-[var(--text-muted)]">{role === 'student' ? 'read-only' : 'limited'}</span>}
         </div>
 
         <nav className="flex-1 space-y-6 overflow-y-auto px-4 py-4">
@@ -78,7 +80,7 @@ export default function Sidebar({ active, open, onClose }: { active: PageId; ope
 
         <div className="p-4">
           <div className="flex items-center gap-3 rounded-2xl border border-white/5 bg-white/[0.03] p-3">
-            <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br text-sm font-bold text-white ${role === 'faculty' ? 'from-sky-500 to-emerald-400' : 'from-violet-500 to-sky-400'}`}>{initials}</div>
+            <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br text-sm font-bold text-white ${readOnly ? 'from-sky-500 to-emerald-400' : 'from-violet-500 to-sky-400'}`}>{initials}</div>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold text-white">{name}</p>
               <p className="truncate text-xs text-[var(--text-muted)]">{user?.title ?? user?.email}</p>

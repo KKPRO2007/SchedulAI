@@ -27,7 +27,8 @@ import { ENTITIES, ENTITY_ORDER } from '../../lib/entities';
 import type { BulkResult, EntityKey } from '../../lib/types';
 import { api } from '../../lib/api';
 import { notifyDataChanged, useAllData } from '../../lib/useData';
-import { clearTimetable, saveAssignments } from '../../lib/scheduler';
+import { clearAssignments, saveAssignments } from '../../lib/scheduler';
+import { logEvent } from '../../lib/workflow';
 import { navigate } from '../../lib/router';
 import { toast } from '../../lib/toast';
 import { buildDemoCampus } from '../../lib/seed';
@@ -165,12 +166,13 @@ export default function ImportPage() {
       }
     }
     if (replace) {
-      clearTimetable();
+      clearAssignments();
     }
     if (plan.assignments.length) saveAssignments(plan.assignments);
     setFailures(fails);
     setPhase('done');
     notifyDataChanged();
+    logEvent('ran import', `${queue.length} file(s): ${queue.map((f) => f.name).join(', ').slice(0, 300)}`);
     toast(fails.length ? 'Import finished with some issues' : 'Import complete', fails.length ? 'info' : 'success');
   }
 

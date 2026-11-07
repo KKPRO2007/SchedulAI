@@ -66,6 +66,8 @@ export function buildDemoCampus() {
         department: dept.name,
         designation: isDemo ? 'Associate Professor' : designation,
         available: isDemo || p % 13 !== 7,
+        maxWorkload: designation === 'Professor' ? 14 : designation === 'Lecturer' ? 20 : 18,
+        preferredWindow: isDemo ? 'morning' : (['any', 'morning', 'afternoon', 'any', 'morning'] as const)[p % 5],
       });
     }
 
@@ -77,7 +79,8 @@ export function buildDemoCampus() {
           department: dept.name,
           semester: sem,
           students: 52 + ((sem * 5 + li * 7 + dept.code.length * 3) % 15),
-          shift: letter === 'B' ? 'Shift 2' : 'Shift 1',
+          // A → Shift 1, B → Shift 2, C → Shift 3; Civil runs in Shift 4 to exercise all four shifts
+          shift: dept.code === 'CE' ? 'Shift 4' : letter === 'B' ? 'Shift 2' : letter === 'C' ? 'Shift 3' : 'Shift 1',
         });
       });
       (CURRICULUM[dept.code]?.[sem] ?? []).forEach(([name, credits, weeklyHours], k) => {

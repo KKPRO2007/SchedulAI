@@ -97,6 +97,7 @@ const CONFIG: Record<
       { key: 'name', label: 'Faculty member', sort: (r) => String(r.name), render: (r) => <Person r={r as unknown as Faculty} /> },
       { key: 'department', label: 'Department', sort: (r) => String(r.department), render: (r) => String(r.department) },
       { key: 'designation', label: 'Designation', sort: (r) => String(r.designation ?? ''), render: (r) => (r.designation as string) || <span className="text-[var(--text-muted)]">—</span> },
+      { key: 'maxWorkload', label: 'Load limit', sort: (r) => Number(r.maxWorkload ?? 18), render: (r) => <span className="whitespace-nowrap">{String(r.maxWorkload ?? 18)}h{r.preferredWindow && r.preferredWindow !== 'any' ? <span className="ml-2 chip text-[10px]">{String(r.preferredWindow)}</span> : null}</span> },
       { key: 'available', label: 'Status', sort: (r) => Number(r.available), render: (r) => <Status ok={Boolean(r.available)} /> },
     ],
     stats: (rows) => {

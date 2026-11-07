@@ -18,7 +18,8 @@ import Tilt from '../fx/Tilt';
 import { useAllData, notifyDataChanged } from '../../lib/useData';
 import { useSession } from '../../lib/auth';
 import { navigate } from '../../lib/router';
-import { fmtHour, loadTimetable, type Session } from '../../lib/scheduler';
+import { fmtHour, type Session } from '../../lib/scheduler';
+import { usePublished, useRequests, useVersions, STATUS_STYLE } from '../../lib/workflow';
 import { api } from '../../lib/api';
 import { buildDemoCampus } from '../../lib/seed';
 import { ENTITY_ORDER } from '../../lib/entities';
@@ -40,7 +41,10 @@ function groupCount<T>(list: T[], key: (x: T) => string) {
 export default function Overview() {
   const d = useAllData();
   const session = useSession();
-  const tt = useMemo(() => loadTimetable(), []);
+  const published = usePublished();
+  const tt = published.data?.payload ?? null;
+  const versions = useVersions();
+  const requests = useRequests();
   const firstName = (session?.user.name ?? 'Admin').split(' ')[0];
 
   const today = useMemo(() => {
@@ -93,7 +97,7 @@ export default function Overview() {
           <div className="grid grid-cols-3 gap-2 sm:gap-3 xl:w-[560px]">
             {[
               { icon: UploadCloud, title: 'Import files', text: 'Excel, CSV, ODS, JSON', go: () => navigate('/app/import') },
-              { icon: Sparkles, title: tt ? 'Regenerate' : 'Generate', text: 'Clash-free timetable', go: () => navigate('/app/timetable?generate=1') },
+              { icon: Sparkles, title: 'Generate', text: 'Scored candidates', go: () => navigate('/app/studio') },
               { icon: PackagePlus, title: 'Demo campus', text: 'Load sample data', go: loadDemo },
             ].map((a) => (
               <Tilt key={a.title} as="button" onClick={a.go} className="group rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-left sm:p-4">
@@ -118,6 +122,33 @@ export default function Overview() {
         <StatCard label="Subjects" value={ready ? d.subjects.length : null} note={`${d.subjects.reduce((a, s) => a + s.weeklyHours, 0)} weekly hours`} icon={BookOpen} tone="fuchsia" bars={groupCount(d.subjects, (s) => s.department).map((x) => x[1])} onClick={() => navigate('/app/subjects')} />
       </section>
 
+      {/* Workflow status (synopsis §10.1) */}
+      <section className="grid gap-4 md:grid-cols-3">
+        <button onClick={() => navigate('/app/timetable')} className="glass rounded-3xl p-5 text-left transition hover:border-white/25">
+          <p className="eyebrow text-emerald-300">Published</p>
+          <p className="font-display mt-2 truncate text-lg font-bold text-white">{published.data?.label ?? 'Nothing published'}</p>
+          <p className="mt-1 text-xs text-[var(--text-muted)]">
+            {published.data?.score ? `Score ${Math.round(published.data.score.total * 100)} · ${published.data.score.hardPassed}/${published.data.score.hardTotal} hard rules` : 'Generate and approve a version'}
+          </p>
+        </button>
+        <button onClick={() => navigate('/app/versions')} className="glass rounded-3xl p-5 text-left transition hover:border-white/25">
+          <p className="eyebrow">Awaiting approval</p>
+          <p className="font-display mt-2 text-3xl font-bold text-white">{versions.data ? versions.data.filter((v) => v.status === 'submitted').length : '—'}</p>
+          <p className="mt-1 flex flex-wrap gap-1.5 text-xs text-[var(--text-muted)]">
+            {(['draft', 'approved'] as const).map((s) => (
+              <span key={s} className={`chip ${STATUS_STYLE[s].chip}`}>
+                {versions.data?.filter((v) => v.status === s).length ?? 0} {STATUS_STYLE[s].label.toLowerCase()}
+              </span>
+            ))}
+          </p>
+        </button>
+        <button onClick={() => navigate('/app/requests')} className="glass rounded-3xl p-5 text-left transition hover:border-white/25">
+          <p className="eyebrow text-amber-200">Open requests</p>
+          <p className="font-display mt-2 text-3xl font-bold text-white">{requests.data ? requests.data.filter((r) => r.status === 'pending').length : '—'}</p>
+          <p className="mt-1 truncate text-xs text-[var(--text-muted)]">{requests.data?.find((r) => r.status === 'pending')?.title ?? 'All caught up'}</p>
+        </button>
+      </section>
+
       {/* Today + health */}
       <section className="grid gap-5 xl:grid-cols-3">
         <div className="glass rounded-3xl p-6 xl:col-span-2">
@@ -134,7 +165,7 @@ export default function Overview() {
             {!tt && (
               <div className="rounded-2xl border border-dashed border-white/10 p-10 text-center">
                 <CalendarClock className="mx-auto text-[var(--text-muted)]" size={30} />
-                <button onClick={() => navigate('/app/timetable?generate=1')} className="btn btn-primary mt-4">
+                <button onClick={() => navigate('/app/studio')} className="btn btn-primary mt-4">
                   <Sparkles size={16} /> Generate now
                 </button>
               </div>

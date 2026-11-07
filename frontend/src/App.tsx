@@ -13,14 +13,19 @@ import { Toaster } from './components/ui/toast';
 
 const Overview = lazy(() => import('./components/dashboard/Overview'));
 const MySchedule = lazy(() => import('./components/dashboard/MySchedule'));
+const StudentTimetable = lazy(() => import('./components/dashboard/StudentTimetable'));
 const TimetablePage = lazy(() => import('./components/dashboard/TimetablePage'));
+const StudioPage = lazy(() => import('./components/workflow/StudioPage'));
+const VersionsPage = lazy(() => import('./components/workflow/VersionsPage'));
+const RequestsPage = lazy(() => import('./components/workflow/RequestsPage'));
+const AuditPage = lazy(() => import('./components/workflow/AuditPage'));
 const EntityPage = lazy(() => import('./components/dashboard/EntityPage'));
 const ImportPage = lazy(() => import('./components/import/ImportPage'));
 const SettingsPage = lazy(() => import('./components/dashboard/SettingsPage'));
 
 function Workspace({ page, role }: { page: PageId; role: Role }) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const readOnly = role === 'faculty';
+  const canEdit = role === 'admin' || role === 'coordinator';
 
   useEffect(() => {
     window.scrollTo({ top: 0 });
@@ -43,9 +48,14 @@ function Workspace({ page, role }: { page: PageId; role: Role }) {
             <div key={page}>
               {page === 'overview' && <Overview />}
               {page === 'schedule' && <MySchedule />}
+              {page === 'my-timetable' && <StudentTimetable />}
               {page === 'import' && <ImportPage />}
-              {page === 'timetable' && <TimetablePage readOnly={readOnly} />}
-              {(page === 'faculty' || page === 'rooms' || page === 'sections' || page === 'subjects') && <EntityPage key={page} entity={page} readOnly={readOnly} />}
+              {page === 'studio' && <StudioPage />}
+              {page === 'versions' && <VersionsPage />}
+              {page === 'timetable' && <TimetablePage />}
+              {page === 'requests' && <RequestsPage />}
+              {page === 'audit' && <AuditPage />}
+              {(page === 'faculty' || page === 'rooms' || page === 'sections' || page === 'subjects') && <EntityPage key={page} entity={page} readOnly={!canEdit} />}
               {page === 'settings' && <SettingsPage />}
             </div>
           </Suspense>
@@ -59,7 +69,7 @@ export default function App() {
   const route = useRoute();
   const session = useSession();
   const [path, query = ''] = route.split('?');
-  const role = session?.user.role ?? 'admin';
+  const role = session?.user.role ?? 'student';
 
   let view: React.ReactNode;
   if (path.startsWith('/app')) {

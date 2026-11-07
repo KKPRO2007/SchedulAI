@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { pool } from '../db.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
+import { audit } from './audit.js';
 
 const BULK_CHUNK = 500;
 
@@ -84,6 +85,7 @@ export function crudRouter({ table, fields, select, defaults = {}, validate, con
         result.forEach((r) => (r.inserted ? inserted++ : updated++));
       }
       await client.query('COMMIT');
+      await audit(req.user, req.body.replace === true ? 'replaced data' : 'imported data', `${table}: ${inserted} added, ${updated} updated, ${errors.length} rejected`).catch(() => {});
       res.json({ inserted, updated, skipped: input.length - rows.length - errors.length, errors });
     } catch (err) {
       await client.query('ROLLBACK').catch(() => {});

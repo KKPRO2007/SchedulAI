@@ -1,11 +1,16 @@
 import { useMemo, useState } from 'react';
-import { BookOpen, CalendarCheck2, Clock, DoorOpen, FlaskConical, GraduationCap, Hourglass, Loader2, MapPin, UserRound } from 'lucide-react';
+import { BookOpen, CalendarCheck2, Clock, DoorOpen, FlaskConical, GitPullRequestArrow, GraduationCap, Hourglass, Loader2, MapPin, Sun, Sunset, UserRound } from 'lucide-react';
 import StatCard from './StatCard';
 import TimetableGrid from '../timetable/TimetableGrid';
 import SessionModal from '../timetable/SessionModal';
 import DownloadMenu from '../timetable/DownloadMenu';
 import { useSession } from '../../lib/auth';
-import { useTimetable } from '../../lib/useTimetable';
+import { usePublished, useRequests } from '../../lib/workflow';
+import { useAllData, notifyDataChanged } from '../../lib/useData';
+import { api } from '../../lib/api';
+import { toast } from '../../lib/toast';
+import { navigate } from '../../lib/router';
+import type { PreferredWindow } from '../../lib/types';
 import { fmtHour, type Session } from '../../lib/scheduler';
 import { dateOf, downloadCsv, downloadExcel, downloadIcs, printTimetable } from '../../lib/exportTimetable';
 import { subjectColor, swatchStyle } from '../../lib/timetableStyle';
@@ -33,7 +38,11 @@ function nextClass(list: Session[], days: string[]) {
 
 export default function MySchedule() {
   const session = useSession();
-  const { tt, busy, data } = useTimetable({ autoGenerate: true });
+  const published = usePublished();
+  const tt = published.data?.payload ?? null;
+  const data = useAllData();
+  const requests = useRequests();
+  const pending = (requests.data ?? []).filter((r) => r.status === 'pending').length;
   const [selected, setSelected] = useState<Session | null>(null);
   const [previewAs, setPreviewAs] = useState('');
 
@@ -55,11 +64,21 @@ export default function MySchedule() {
   const focusDay = tt?.days.includes(todayName) ? todayName : (tt?.days[0] ?? 'Monday');
   const dayList = mine.filter((s) => s.day === focusDay).sort((a, b) => a.start - b.start);
 
+  async function setWindow(w: PreferredWindow) {
+    try {
+      await api.patch('/faculty/me/preferences', { preferredWindow: w });
+      notifyDataChanged();
+      toast(w === 'any' ? 'Preference cleared' : `Preferred window set to ${w}. It counts in the next generated timetable.`);
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Could not save', 'error');
+    }
+  }
+
   if (!tt) {
     return (
       <div className="flex h-[60vh] flex-col items-center justify-center gap-4 text-center">
         <Loader2 className="animate-spin text-violet-300" size={30} />
-        <p className="text-[var(--text-secondary)]">{busy || !data.ready ? 'Loading your week…' : 'No timetable has been published yet.'}</p>
+        <p className="text-[var(--text-secondary)]">{published.loading ? 'Loading your week…' : 'No timetable has been published yet.'}</p>
       </div>
     );
   }
@@ -162,6 +181,27 @@ export default function MySchedule() {
               </li>
             ))}
           </ol>
+
+          {isMe && (
+            <div className="mt-8">
+              <h3 className="text-sm font-semibold text-white">Preferred teaching window</h3>
+              <p className="mt-1 text-xs text-[var(--text-muted)]">A soft preference: the generator tries to honour it, and the score shows how often it did.</p>
+              <div className="mt-3 grid grid-cols-3 gap-1.5">
+                {([['any', Clock, 'Any time'], ['morning', Sun, 'Mornings'], ['afternoon', Sunset, 'Afternoons']] as const).map(([w, Icon, l]) => (
+                  <button
+                    key={w}
+                    onClick={() => setWindow(w)}
+                    className={`flex flex-col items-center gap-1 rounded-xl border px-2 py-2.5 text-xs font-semibold transition ${(me?.preferredWindow ?? 'any') === w ? 'border-violet-300/60 bg-violet-500/15 text-white' : 'border-white/10 bg-white/[0.03] text-[var(--text-secondary)]'}`}
+                  >
+                    <Icon size={15} /> {l}
+                  </button>
+                ))}
+              </div>
+              <button onClick={() => navigate('/app/requests')} className="btn btn-ghost mt-3 w-full text-xs">
+                <GitPullRequestArrow size={14} /> {pending ? `${pending} pending · ` : ''}Raise a change request
+              </button>
+            </div>
+          )}
 
           <h3 className="mt-8 text-sm font-semibold text-white">Weekly load</h3>
           <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-white/[0.07]">

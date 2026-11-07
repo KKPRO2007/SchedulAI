@@ -1,6 +1,21 @@
 import { localRequest } from './localDb';
+import type { User } from './demoAccounts';
 
-const BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:5000';
+// The signed-in user's token is attached to every call; the server checks the role.
+let auth: { token: string; user: User } | null = null;
+export function setAuth(next: { token: string; user: User } | null) {
+  auth = next;
+}
+const unauthorized = new Set<() => void>();
+export function onUnauthorized(fn: () => void) {
+  unauthorized.add(fn);
+  return () => {
+    unauthorized.delete(fn);
+  };
+}
+
+// Dev talks to the local Express server; production calls /api on the same domain.
+const BASE = import.meta.env.VITE_API_URL ?? (import.meta.env.DEV ? 'http://localhost:5000' : '');
 
 export type DataMode = 'server' | 'local';
 
@@ -51,23 +66,24 @@ function resolveMode(): Promise<DataMode> {
 
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
   const current = await resolveMode();
-  if (current === 'local') return (await localRequest(method, path, body)) as T;
+  if (current === 'local') return (await localRequest(method, path, body, auth?.user ?? null)) as T;
 
   let res: Response;
   try {
     res = await fetch(`${BASE}/api${path}`, {
       method,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...(auth ? { Authorization: `Bearer ${auth.token}` } : {}) },
       body: body === undefined ? undefined : JSON.stringify(body),
     });
   } catch {
     // Server went away mid-session: keep the demo usable.
     setMode('local');
-    return (await localRequest(method, path, body)) as T;
+    return (await localRequest(method, path, body, auth?.user ?? null)) as T;
   }
 
   if (res.status === 204) return undefined as T;
   const data = await res.json().catch(() => ({}));
+  if (res.status === 401 && !path.startsWith('/auth/')) unauthorized.forEach((fn) => fn());
   if (!res.ok) throw new Error(data.error ?? 'Something went wrong');
   return data as T;
 }
@@ -76,5 +92,6 @@ export const api = {
   get: <T>(path: string) => request<T>('GET', path),
   post: <T>(path: string, body: unknown) => request<T>('POST', path, body),
   put: <T>(path: string, body: unknown) => request<T>('PUT', path, body),
+  patch: <T>(path: string, body: unknown) => request<T>('PATCH', path, body),
   delete: (path: string) => request<void>('DELETE', path),
 };

@@ -124,6 +124,8 @@ function parseRoomType(v: string): 'Classroom' | 'Laboratory' | 'Seminar Hall' |
 function parseShift(v: string): string | null {
   const s = norm(v);
   if (!s) return null;
+  if (/4|fourth|iv\b|night|d\b/.test(s)) return 'Shift 4';
+  if (/3|third|iii\b|c\b/.test(s)) return 'Shift 3';
   if (/2|second|evening|afternoon|ii\b|day|b\b/.test(s)) return 'Shift 2';
   if (/1|first|morning|i\b|a\b/.test(s)) return 'Shift 1';
   return null;
@@ -295,6 +297,8 @@ function buildRecord(entity: EntityKey, row: string[], map: Record<string, numbe
         inferred.push('department');
       }
       r.designation = get('designation') || null;
+      r.maxWorkload = parseNumber(get('maxWorkload')) ?? 18;
+      r.preferredWindow = get('preferredWindow');
       const avail = parseBool(get('available'));
       r.available = avail ?? true;
       break;
