@@ -1,11 +1,14 @@
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { api } from "../../lib/api";
+
 import {
   Search,
   Plus,
   GraduationCap,
   Users,
   BookOpen,
+  Pencil,
   Trash2,
   X,
 } from "lucide-react";
@@ -19,41 +22,6 @@ type Section = {
   shift: "Shift 1" | "Shift 2";
 };
 
-const initialSections: Section[] = [
-  {
-    id: 1,
-    name: "CSE-A",
-    department: "Computer Science",
-    semester: 5,
-    students: 60,
-    shift: "Shift 1",
-  },
-  {
-    id: 2,
-    name: "CSE-B",
-    department: "Computer Science",
-    semester: 5,
-    students: 58,
-    shift: "Shift 2",
-  },
-  {
-    id: 3,
-    name: "IT-A",
-    department: "Information Technology",
-    semester: 3,
-    students: 55,
-    shift: "Shift 1",
-  },
-  {
-    id: 4,
-    name: "ECE-A",
-    department: "Electronics & Communication",
-    semester: 5,
-    students: 52,
-    shift: "Shift 2",
-  },
-];
-
 const emptyForm = {
   name: "",
   department: "Computer Science",
@@ -63,11 +31,23 @@ const emptyForm = {
 };
 
 export default function SectionsPage() {
-  const [sections, setSections] = useState<Section[]>(initialSections);
+  const [sections, setSections] = useState<Section[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+
+  useEffect(() => {
+    api
+      .get<Section[]>("/sections")
+      .then(setSections)
+      .catch(() => setLoadError("Could not load sections. Is the backend running?"))
+      .finally(() => setLoading(false));
+  }, []);
+
   const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState("");
+  const [editingId, setEditingId] = useState<number | null>(null);
 
   const filteredSections = useMemo(() => {
     const query = search.toLowerCase().trim();
@@ -88,21 +68,24 @@ export default function SectionsPage() {
     sections.map((section) => section.department)
   ).size;
 
-  function addSection(event: React.FormEvent<HTMLFormElement>) {
+  function openEdit(section: Section) {
+    setForm({
+      name: section.name,
+      department: section.department,
+      semester: String(section.semester),
+      students: String(section.students),
+      shift: section.shift,
+    });
+    setEditingId(section.id);
+    setError("");
+    setShowModal(true);
+  }
+
+  async function saveSection(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    const name = form.name.trim();
     const students = Number(form.students);
     const semester = Number(form.semester);
-
-    if (
-      sections.some(
-        (section) => section.name.toLowerCase() === name.toLowerCase()
-      )
-    ) {
-      setError("A section with this name already exists.");
-      return;
-    }
 
     if (!Number.isInteger(students) || students < 1) {
       setError("Enter a valid student count greater than zero.");
@@ -114,25 +97,43 @@ export default function SectionsPage() {
       return;
     }
 
-    const newSection: Section = {
-      id: Date.now(),
-      name,
+    const payload = {
+      name: form.name.trim(),
       department: form.department,
       semester,
       students,
       shift: form.shift,
     };
 
-    setSections((current) => [...current, newSection]);
-    setForm(emptyForm);
-    setError("");
-    setShowModal(false);
+    try {
+      if (editingId !== null) {
+        const updated = await api.put<Section>(`/sections/${editingId}`, payload);
+        setSections((current) =>
+          current.map((section) => (section.id === editingId ? updated : section))
+        );
+      } else {
+        const created = await api.post<Section>("/sections", payload);
+        setSections((current) => [...current, created]);
+      }
+
+      setForm(emptyForm);
+      setEditingId(null);
+      setError("");
+      setShowModal(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not save the section.");
+    }
   }
 
-  function deleteSection(id: number) {
-    if (window.confirm("Are you sure you want to delete this section?")) {
-      setSections((current) =>
-        current.filter((section) => section.id !== id)
+  async function deleteSection(id: number) {
+    if (!window.confirm("Are you sure you want to delete this section?")) return;
+
+    try {
+      await api.delete(`/sections/${id}`);
+      setSections((current) => current.filter((section) => section.id !== id));
+    } catch (err) {
+      window.alert(
+        err instanceof Error ? err.message : "Could not delete the section."
       );
     }
   }
@@ -154,6 +155,8 @@ export default function SectionsPage() {
 
         <button
           onClick={() => {
+            setForm(emptyForm);
+            setEditingId(null);
             setError("");
             setShowModal(true);
           }}
@@ -190,7 +193,10 @@ export default function SectionsPage() {
           <div>
             <h2 className="font-semibold text-slate-900">All Sections</h2>
             <p className="mt-1 text-sm text-slate-500">
-              Showing {filteredSections.length} of {sections.length} sections
+              {loading
+                ? "Loading sections..."
+                : loadError ||
+                  `Showing ${filteredSections.length} of ${sections.length} sections`}
             </p>
           </div>
 
@@ -266,14 +272,25 @@ export default function SectionsPage() {
                   </td>
 
                   <td className="px-5 py-4 text-right">
-                    <button
-                      onClick={() => deleteSection(section.id)}
-                      aria-label={`Delete ${section.name}`}
-                      title="Delete section"
-                      className="rounded-lg p-2 text-slate-400 transition hover:bg-red-50 hover:text-red-600"
-                    >
-                      <Trash2 size={17} />
-                    </button>
+                    <div className="flex justify-end gap-2">
+                      <button
+                        onClick={() => openEdit(section)}
+                        aria-label={`Edit ${section.name}`}
+                        title="Edit section"
+                        className="rounded-lg p-2 text-slate-400 transition hover:bg-blue-50 hover:text-blue-600"
+                      >
+                        <Pencil size={17} />
+                      </button>
+
+                      <button
+                        onClick={() => deleteSection(section.id)}
+                        aria-label={`Delete ${section.name}`}
+                        title="Delete section"
+                        className="rounded-lg p-2 text-slate-400 transition hover:bg-red-50 hover:text-red-600"
+                      >
+                        <Trash2 size={17} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -301,7 +318,7 @@ export default function SectionsPage() {
             <div className="mb-5 flex items-start justify-between">
               <div>
                 <h2 className="text-lg font-bold text-slate-900">
-                  Add a section
+                  {editingId !== null ? "Edit section" : "Add a section"}
                 </h2>
                 <p className="mt-1 text-sm text-slate-500">
                   Enter the academic group details.
@@ -320,7 +337,7 @@ export default function SectionsPage() {
               </button>
             </div>
 
-            <form onSubmit={addSection} className="space-y-4">
+            <form onSubmit={saveSection} className="space-y-4">
               <FormField label="Section name">
                 <input
                   required

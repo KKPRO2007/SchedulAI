@@ -1,5 +1,7 @@
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { api } from '../../lib/api';
+
 import {
   Search,
   Plus,
@@ -18,39 +20,23 @@ type FacultyMember = {
   available: boolean;
 };
 
-const initialFaculty: FacultyMember[] = [
-  {
-    id: 1,
-    name: 'Dr. Ananya Sharma',
-    email: 'ananya@college.edu',
-    department: 'Computer Science',
-    available: true,
-  },
-  {
-    id: 2,
-    name: 'Prof. Rahul Verma',
-    email: 'rahul@college.edu',
-    department: 'Information Technology',
-    available: true,
-  },
-  {
-    id: 3,
-    name: 'Dr. Priya Singh',
-    email: 'priya@college.edu',
-    department: 'Computer Science',
-    available: false,
-  },
-  {
-    id: 4,
-    name: 'Prof. Arjun Mehta',
-    email: 'arjun@college.edu',
-    department: 'Mathematics',
-    available: true,
-  },
-];
+
 
 function FacultyPage() {
-  const [faculty, setFaculty] = useState(initialFaculty);
+    const [faculty, setFaculty] = useState<FacultyMember[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+  const [formError, setFormError] = useState('');
+
+  useEffect(() => {
+    api
+      .get<FacultyMember[]>('/faculty')
+      .then(setFaculty)
+      .catch(() => setLoadError('Could not load faculty. Is the backend running?'))
+      .finally(() => setLoading(false));
+  }, []);
+
+
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
 
@@ -68,30 +54,40 @@ function FacultyPage() {
     );
   });
 
-  function addFaculty(event: React.FormEvent<HTMLFormElement>) {
+    
+
+    async function addFaculty(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    const newMember: FacultyMember = {
-      id: Date.now(),
-      name: name.trim(),
-      email: email.trim(),
-      department,
-      available: true,
-    };
+    try {
+      const created = await api.post<FacultyMember>('/faculty', {
+        name: name.trim(),
+        email: email.trim(),
+        department,
+      });
 
-    setFaculty((current) => [...current, newMember]);
-
-    setName('');
-    setEmail('');
-    setDepartment('');
-    setShowForm(false);
+      setFaculty((current) => [...current, created]);
+      setName('');
+      setEmail('');
+      setDepartment('');
+      setFormError('');
+      setShowForm(false);
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : 'Could not save.');
+    }
   }
 
-  function deleteFaculty(id: number) {
-    setFaculty((current) =>
-      current.filter((member) => member.id !== id)
-    );
+  async function deleteFaculty(id: number) {
+    if (!window.confirm('Are you sure you want to delete this faculty member?')) return;
+
+    try {
+      await api.delete(`/faculty/${id}`);
+      setFaculty((current) => current.filter((member) => member.id !== id));
+    } catch (err) {
+      window.alert(err instanceof Error ? err.message : 'Could not delete.');
+    }
   }
+
 
   return (
     <div className="space-y-6">
@@ -110,7 +106,12 @@ function FacultyPage() {
         </div>
 
         <button
-          onClick={() => setShowForm(true)}
+        
+          onClick={() => {
+            setFormError('');
+            setShowForm(true);
+          }}
+
           className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white hover:bg-indigo-700"
         >
           <Plus size={18} />
@@ -149,7 +150,9 @@ function FacultyPage() {
           <div>
             <h4 className="font-bold">Faculty directory</h4>
             <p className="mt-1 text-sm text-slate-500">
-              {filteredFaculty.length} members shown
+                {loading
+                ? 'Loading faculty...'
+                : loadError || `${filteredFaculty.length} members shown`}
             </p>
           </div>
 
@@ -323,6 +326,10 @@ function FacultyPage() {
                   <option>Electronics</option>
                 </select>
               </div>
+
+              {formError && (
+                <p className="text-sm text-red-600">{formError}</p>
+              )}
 
               <div className="flex justify-end gap-3 pt-3">
                 <button

@@ -1,8 +1,11 @@
-import { useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { api } from "../../lib/api";
+
 import {
   BookOpen,
   Plus,
   Search,
+  Pencil,
   Trash2,
   X,
   Clock,
@@ -19,44 +22,7 @@ type Subject = {
   weeklyHours: number;
 };
 
-const initialSubjects: Subject[] = [
-  {
-    id: 1,
-    code: "CS301",
-    name: "Database Management Systems",
-    department: "CSE",
-    semester: 5,
-    credits: 4,
-    weeklyHours: 4,
-  },
-  {
-    id: 2,
-    code: "CS302",
-    name: "Operating Systems",
-    department: "CSE",
-    semester: 5,
-    credits: 4,
-    weeklyHours: 4,
-  },
-  {
-    id: 3,
-    code: "CS303",
-    name: "Computer Networks",
-    department: "CSE",
-    semester: 5,
-    credits: 3,
-    weeklyHours: 3,
-  },
-  {
-    id: 4,
-    code: "IT201",
-    name: "Web Development",
-    department: "IT",
-    semester: 3,
-    credits: 4,
-    weeklyHours: 5,
-  },
-];
+
 
 const emptyForm = {
   code: "",
@@ -71,11 +37,23 @@ const inputClass =
   "w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100";
 
 export default function SubjectsPage() {
-  const [subjects, setSubjects] = useState<Subject[]>(initialSubjects);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+
+  useEffect(() => {
+    api
+      .get<Subject[]>("/subjects")
+      .then(setSubjects)
+      .catch(() => setLoadError("Could not load subjects. Is the backend running?"))
+      .finally(() => setLoading(false));
+  }, []);
+
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ ...emptyForm });
   const [error, setError] = useState("");
+    const [editingId, setEditingId] = useState<number | null>(null);
 
   const filteredSubjects = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -102,7 +80,21 @@ export default function SubjectsPage() {
     0
   );
 
-  function handleAddSubject(event: FormEvent<HTMLFormElement>) {
+   function openEdit(subject: Subject) {
+    setForm({
+      code: subject.code,
+      name: subject.name,
+      department: subject.department,
+      semester: String(subject.semester),
+      credits: String(subject.credits),
+      weeklyHours: String(subject.weeklyHours),
+    });
+    setEditingId(subject.id);
+    setError("");
+    setShowForm(true);
+  }
+
+  async function handleSaveSubject(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
 
@@ -118,15 +110,6 @@ export default function SubjectsPage() {
     }
 
     if (
-      subjects.some(
-        (subject) => subject.code.toLowerCase() === code.toLowerCase()
-      )
-    ) {
-      setError("This subject code already exists.");
-      return;
-    }
-
-    if (
       !Number.isInteger(semester) ||
       semester < 1 ||
       semester > 8 ||
@@ -137,14 +120,11 @@ export default function SubjectsPage() {
       weeklyHours < 1 ||
       weeklyHours > 20
     ) {
-      setError(
-        "Semester must be 1–8, credits 1–10, and weekly hours 1–20."
-      );
+      setError("Semester must be 1–8, credits 1–10, and weekly hours 1–20.");
       return;
     }
 
-    const newSubject: Subject = {
-      id: Date.now(),
+    const payload = {
       code,
       name,
       department: form.department,
@@ -153,21 +133,34 @@ export default function SubjectsPage() {
       weeklyHours,
     };
 
-    setSubjects((current) => [...current, newSubject]);
-    setForm({ ...emptyForm });
-    setShowForm(false);
-    setError("");
+    try {
+      if (editingId !== null) {
+        const updated = await api.put<Subject>(`/subjects/${editingId}`, payload);
+        setSubjects((current) =>
+          current.map((subject) => (subject.id === editingId ? updated : subject))
+        );
+      } else {
+        const created = await api.post<Subject>("/subjects", payload);
+        setSubjects((current) => [...current, created]);
+      }
+
+      setForm({ ...emptyForm });
+      setEditingId(null);
+      setShowForm(false);
+      setError("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not save the subject.");
+    }
   }
 
-  function deleteSubject(id: number) {
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this subject?"
-    );
+  async function deleteSubject(id: number) {
+    if (!window.confirm("Are you sure you want to delete this subject?")) return;
 
-    if (confirmed) {
-      setSubjects((current) =>
-        current.filter((subject) => subject.id !== id)
-      );
+    try {
+      await api.delete(`/subjects/${id}`);
+      setSubjects((current) => current.filter((subject) => subject.id !== id));
+    } catch (err) {
+      window.alert(err instanceof Error ? err.message : "Could not delete the subject.");
     }
   }
 
@@ -193,6 +186,7 @@ export default function SubjectsPage() {
           type="button"
           onClick={() => {
             setForm({ ...emptyForm });
+            setEditingId(null);
             setError("");
             setShowForm(true);
           }}
@@ -222,7 +216,12 @@ export default function SubjectsPage() {
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-        <div className="border-b border-slate-100 p-4">
+        <div className="space-y-4 p-4">
+          {(loading || loadError) && (
+          <p className="px-4 pt-4 text-sm text-slate-500">
+            {loading ? "Loading subjects..." : loadError}
+          </p>
+        )}
           <div className="relative max-w-md">
             <Search
               size={18}
@@ -280,15 +279,25 @@ export default function SubjectsPage() {
                     {subject.weeklyHours} hrs
                   </td>
 
-                  <td className="px-5 py-4">
-                    <button
-                      type="button"
-                      onClick={() => deleteSubject(subject.id)}
-                      aria-label={"Delete " + subject.name}
-                      className="rounded-lg p-2 text-slate-400 transition hover:bg-red-50 hover:text-red-600"
-                    >
-                      <Trash2 size={17} />
-                    </button>
+                                    <td className="px-5 py-4">
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => openEdit(subject)}
+                        aria-label={"Edit " + subject.name}
+                        className="rounded-lg p-2 text-slate-400 transition hover:bg-blue-50 hover:text-blue-600"
+                      >
+                        <Pencil size={17} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => deleteSubject(subject.id)}
+                        aria-label={"Delete " + subject.name}
+                        className="rounded-lg p-2 text-slate-400 transition hover:bg-red-50 hover:text-red-600"
+                      >
+                        <Trash2 size={17} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -322,7 +331,7 @@ export default function SubjectsPage() {
                   id="add-subject-title"
                   className="text-xl font-bold text-slate-900"
                 >
-                  Add Subject
+                  {editingId !== null ? "Edit Subject" : "Add Subject"}
                 </h2>
                 <p className="mt-1 text-sm text-slate-500">
                   Enter the subject details below.
@@ -339,7 +348,7 @@ export default function SubjectsPage() {
               </button>
             </div>
 
-            <form onSubmit={handleAddSubject} className="space-y-4">
+              <form onSubmit={handleSaveSubject} className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
                 <FormField label="Subject Code">
                   <input

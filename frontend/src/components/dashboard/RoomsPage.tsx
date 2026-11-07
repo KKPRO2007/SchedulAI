@@ -1,4 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { api } from "../../lib/api";
+
 import {
   Search,
   Plus,
@@ -6,6 +8,7 @@ import {
   Users,
   FlaskConical,
   Presentation,
+  Pencil,
   Trash2,
   X,
 } from "lucide-react";
@@ -19,41 +22,8 @@ type Room = {
   available: boolean;
 };
 
-const initialRooms: Room[] = [
-  {
-    id: 1,
-    name: "A-101",
-    building: "Academic Block A",
-    type: "Classroom",
-    capacity: 60,
-    available: true,
-  },
-  {
-    id: 2,
-    name: "CS-Lab-1",
-    building: "Computer Science Block",
-    type: "Laboratory",
-    capacity: 40,
-    available: true,
-  },
-  {
-    id: 3,
-    name: "B-204",
-    building: "Academic Block B",
-    type: "Classroom",
-    capacity: 50,
-    available: false,
-  },
-  {
-    id: 4,
-    name: "Seminar-1",
-    building: "Main Building",
-    type: "Seminar Hall",
-    capacity: 100,
-    available: true,
-  },
-];
 
+  
 const emptyForm = {
   name: "",
   building: "",
@@ -62,10 +32,22 @@ const emptyForm = {
 };
 
 export default function RoomsPage() {
-  const [rooms, setRooms] = useState<Room[]>(initialRooms);
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+
+  useEffect(() => {
+    api
+      .get<Room[]>("/rooms")
+      .then(setRooms)
+      .catch(() => setLoadError("Could not load rooms. Is the backend running?"))
+      .finally(() => setLoading(false));
+  }, []);
+
   const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState(emptyForm);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [error, setError] = useState("");
 
   const filteredRooms = useMemo(() => {
@@ -84,13 +66,20 @@ export default function RoomsPage() {
     0
   );
 
-  function addRoom(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+      function openEdit(room: Room) {
+    setForm({
+      name: room.name,
+      building: room.building,
+      type: room.type,
+      capacity: String(room.capacity),
+    });
+    setEditingId(room.id);
+    setError("");
+    setShowModal(true);
+  }
 
-    if (rooms.some((room) => room.name.toLowerCase() === form.name.trim().toLowerCase())) {
-      setError("A room with this name already exists.");
-      return;
-    }
+  async function saveRoom(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
 
     const capacity = Number(form.capacity);
 
@@ -99,28 +88,46 @@ export default function RoomsPage() {
       return;
     }
 
-    const newRoom: Room = {
-      id: Date.now(),
+    const payload = {
       name: form.name.trim(),
       building: form.building.trim(),
       type: form.type,
       capacity,
-      available: true,
     };
 
-    setRooms((currentRooms) => [...currentRooms, newRoom]);
-    setForm(emptyForm);
-    setError("");
-    setShowModal(false);
+    try {
+      if (editingId !== null) {
+        const existing = rooms.find((room) => room.id === editingId);
+        const updated = await api.put<Room>(`/rooms/${editingId}`, {
+          ...payload,
+          available: existing?.available ?? true,
+        });
+        setRooms((list) =>
+          list.map((room) => (room.id === editingId ? updated : room))
+        );
+      } else {
+        const created = await api.post<Room>("/rooms", payload);
+        setRooms((list) => [...list, created]);
+      }
+
+      setForm(emptyForm);
+      setEditingId(null);
+      setError("");
+      setShowModal(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not save the room.");
+    }
   }
 
-  function deleteRoom(id: number) {
+  async function deleteRoom(id: number) {
     const confirmed = window.confirm("Are you sure you want to delete this room?");
+    if (!confirmed) return;
 
-    if (confirmed) {
-      setRooms((currentRooms) =>
-        currentRooms.filter((room) => room.id !== id)
-      );
+    try {
+      await api.delete(`/rooms/${id}`);
+      setRooms((currentRooms) => currentRooms.filter((room) => room.id !== id));
+    } catch (err) {
+      window.alert(err instanceof Error ? err.message : "Could not delete the room.");
     }
   }
 
@@ -152,10 +159,13 @@ export default function RoomsPage() {
         </div>
 
         <button
-          onClick={() => {
+            onClick={() => {
+            setForm(emptyForm);
+            setEditingId(null);
             setError("");
             setShowModal(true);
           }}
+
           className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700"
         >
           <Plus size={18} />
@@ -189,7 +199,9 @@ export default function RoomsPage() {
           <div>
             <h2 className="font-semibold text-slate-900">All Rooms</h2>
             <p className="mt-1 text-sm text-slate-500">
-              {filteredRooms.length} of {rooms.length} rooms
+                {loading
+                ? "Loading rooms..."
+                : loadError || `${filteredRooms.length} of ${rooms.length} rooms`}
             </p>
           </div>
 
@@ -264,7 +276,15 @@ export default function RoomsPage() {
                     </span>
                   </td>
 
-                  <td className="px-5 py-4 text-right">
+                                   <td className="px-5 py-4 text-right">
+                    <button
+                      onClick={() => openEdit(room)}
+                      aria-label={`Edit ${room.name}`}
+                      title="Edit room"
+                      className="rounded-lg p-2 text-slate-400 transition hover:bg-blue-50 hover:text-blue-600"
+                    >
+                      <Pencil size={17} />
+                    </button>
                     <button
                       onClick={() => deleteRoom(room.id)}
                       aria-label={`Delete ${room.name}`}
@@ -304,7 +324,7 @@ export default function RoomsPage() {
             <div className="mb-5 flex items-start justify-between">
               <div>
                 <h2 className="text-lg font-bold text-slate-900">
-                  Add a new room
+                    {editingId !== null ? "Edit room" : "Add a new room"}
                 </h2>
                 <p className="mt-1 text-sm text-slate-500">
                   Enter the facility details below.
@@ -323,7 +343,7 @@ export default function RoomsPage() {
               </button>
             </div>
 
-            <form onSubmit={addRoom} className="space-y-4">
+              <form onSubmit={saveRoom} className="space-y-4">
               <FormField label="Room name or number">
                 <input
                   required

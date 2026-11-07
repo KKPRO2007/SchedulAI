@@ -1,5 +1,7 @@
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { api } from './lib/api';
+
 import FacultyPage from './components/dashboard/FacultyPage';
 import RoomsPage from "./components/dashboard/RoomsPage";
 import TimetablePage from './components/dashboard/TimetablePage';
@@ -33,32 +35,7 @@ const navigation = [
   { label: 'Subjects', icon: BookOpen },
 ];
 
-const stats = [
-  {
-    label: 'Total Faculty',
-    value: '48',
-    note: 'Across all departments',
-    icon: Users,
-  },
-  {
-    label: 'Rooms & Labs',
-    value: '32',
-    note: 'Available for scheduling',
-    icon: DoorOpen,
-  },
-  {
-    label: 'Classes Today',
-    value: '126',
-    note: 'Across both shifts',
-    icon: CalendarDays,
-  },
-  {
-    label: 'Scheduling Conflicts',
-    value: '03',
-    note: 'Require your attention',
-    icon: AlertTriangle,
-  },
-];
+
 
 const sessions = [
   {
@@ -85,7 +62,30 @@ function DashboardContent({
   onNavigate,
 }: {
   onNavigate: (page: string) => void;
-}) {
+}) 
+{
+  const [counts, setCounts] = useState<{
+    faculty: number;
+    rooms: number;
+    sections: number;
+    subjects: number;
+  } | null>(null);
+
+  useEffect(() => {
+    api.get<NonNullable<typeof counts>>('/stats').then(setCounts).catch(() => setCounts(null));
+  }, []);
+
+  const show = (n?: number) => (counts && n !== undefined ? String(n) : '—');
+
+  const stats = [
+    { label: 'Total Faculty', value: show(counts?.faculty), note: 'Registered faculty members', icon: Users },
+    { label: 'Rooms & Labs', value: show(counts?.rooms), note: 'Classrooms and laboratories', icon: DoorOpen },
+    { label: 'Sections', value: show(counts?.sections), note: 'Student groups', icon: GraduationCap },
+    { label: 'Subjects', value: show(counts?.subjects), note: 'Subjects to schedule', icon: BookOpen },
+  ];
+
+
+
   return (
     <div className="space-y-8">
       <section className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
