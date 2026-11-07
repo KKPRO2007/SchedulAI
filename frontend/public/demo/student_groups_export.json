@@ -1,0 +1,32 @@
+[
+  {
+    "class": "IT-3A",
+    "students": 48,
+    "timing": "Morning"
+  },
+  {
+    "class": "IT-3B",
+    "students": 51,
+    "timing": "Evening"
+  },
+  {
+    "class": "IT-5A",
+    "students": 54,
+    "timing": "Morning"
+  },
+  {
+    "class": "IT-5B",
+    "students": 57,
+    "timing": "Evening"
+  },
+  {
+    "class": "CSE-3C",
+    "students": 60,
+    "timing": "Morning"
+  },
+  {
+    "class": "ME-5C",
+    "students": 63,
+    "timing": "Evening"
+  }
+]
