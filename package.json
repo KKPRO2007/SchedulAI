@@ -1,0 +1,22 @@
+{
+  "name": "schedul-ai",
+  "private": true,
+  "version": "1.0.0",
+  "description": "SchedulAI: academic timetable and resource management",
+  "type": "module",
+  "scripts": {
+    "build": "npm --prefix frontend ci && npm --prefix frontend run build",
+    "dev:api": "npm --prefix backend run dev",
+    "dev:web": "npm --prefix frontend run dev"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.9",
+    "express": "^5.3.0",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.23.1"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
