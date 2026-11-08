@@ -20,7 +20,7 @@ export default function SessionModal({ session, onClose }: { session: Session | 
       open
       onClose={onClose}
       icon={
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white" style={{ background: subjectColor(s.color) }}>
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-white" style={{ background: subjectColor(s.color) }}>
           {s.isLab ? <FlaskConical size={20} /> : <Clock size={20} />}
         </span>
       }
@@ -29,10 +29,10 @@ export default function SessionModal({ session, onClose }: { session: Session | 
     >
       <div className="space-y-2 p-6">
         {rows.map((r) => (
-          <div key={r.label} className="flex items-center gap-3 rounded-xl bg-white/[0.03] px-4 py-3">
+          <div key={r.label} className="flex items-center gap-3 rounded-md bg-white/[0.03] px-4 py-3">
             <r.icon size={16} className="shrink-0 text-[var(--text-muted)]" />
             <span className="w-28 text-xs text-[var(--text-muted)]">{r.label}</span>
-            <span className="min-w-0 truncate text-sm text-white">{r.value}</span>
+            <span className="min-w-0 truncate text-sm text-[var(--text-primary)]">{r.value}</span>
           </div>
         ))}
         <button onClick={() => downloadIcs([s], `${s.subjectName} ${s.section}`)} className="btn btn-ghost mt-3 w-full">

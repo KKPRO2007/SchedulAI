@@ -113,13 +113,13 @@ export default function StudioPage() {
 
       {/* Setup row */}
       <section className="grid gap-4 lg:grid-cols-[1.2fr_1fr]">
-        <div className="glass rounded-3xl p-5 sm:p-6">
+        <div className="glass rounded-2xl p-5 sm:p-6">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <h2 className="font-display text-lg font-bold text-white">Input check</h2>
+              <h2 className="text-base font-semibold text-[var(--text-primary)]">Input check</h2>
               <p className="text-sm text-[var(--text-muted)]">Validated before solving (synopsis §4.2)</p>
             </div>
-            <span className={`chip ${quality.errors ? 'border-amber-400/30 bg-amber-400/10 text-amber-200' : 'border-emerald-400/30 bg-emerald-400/10 text-emerald-300'}`}>
+            <span className={`chip ${quality.errors ? 'border-amber-400/30 bg-amber-400/10 text-amber-300' : 'border-emerald-400/30 bg-emerald-400/10 text-emerald-300'}`}>
               {quality.errors ? <AlertTriangle size={12} /> : <CheckCircle2 size={12} />}
               {quality.errors ? `${quality.errors} warning${quality.errors === 1 ? '' : 's'}` : 'Ready'}
             </span>
@@ -131,14 +131,14 @@ export default function StudioPage() {
               ['Sections', data.sections.length],
               ['Subjects', data.subjects.length],
             ].map(([l, v]) => (
-              <div key={l} className="rounded-xl bg-white/[0.04] px-3 py-2.5">
-                <p className="font-display text-xl font-bold text-white">{data.ready ? v : '—'}</p>
+              <div key={l} className="rounded-md bg-white/[0.03] px-3 py-2.5">
+                <p className="text-lg font-semibold text-[var(--text-primary)]">{data.ready ? v : '—'}</p>
                 <p className="text-[11px] text-[var(--text-muted)]">{l}</p>
               </div>
             ))}
           </div>
           {quality.items.length > 0 && (
-            <ul className="mt-4 space-y-1.5 text-xs text-amber-100/80">
+            <ul className="mt-4 space-y-1.5 text-xs text-amber-300">
               {quality.items.slice(0, 5).map((t) => (
                 <li key={t} className="flex gap-2">
                   <AlertTriangle size={13} className="mt-0.5 shrink-0 text-amber-300" /> {t}
@@ -148,14 +148,14 @@ export default function StudioPage() {
           )}
         </div>
 
-        <div className="glass rounded-3xl p-5 sm:p-6">
+        <div className="glass rounded-2xl p-5 sm:p-6">
           <button onClick={() => setShowWeights((s) => !s)} className="flex w-full items-center justify-between gap-3 text-left">
             <span>
-              <span className="font-display block text-lg font-bold text-white">Rule weights</span>
+              <span className="block text-lg font-semibold text-[var(--text-primary)] tabular-nums">Rule weights</span>
               <span className="block text-sm text-[var(--text-muted)]">Soft score = Σ weight × component</span>
             </span>
             <span className="flex items-center gap-2">
-              <SlidersHorizontal size={18} className="text-violet-300" />
+              <SlidersHorizontal size={18} className="text-brand-300" />
               <ChevronDown size={16} className={`text-[var(--text-muted)] transition lg:hidden ${showWeights ? 'rotate-180' : ''}`} />
             </span>
           </button>
@@ -163,15 +163,15 @@ export default function StudioPage() {
             {(Object.keys(WEIGHT_LABEL) as (keyof Weights)[]).map((k) => (
               <label key={k} className="block">
                 <span className="flex justify-between text-xs text-[var(--text-secondary)]">
-                  {WEIGHT_LABEL[k]} <span className="tabular-nums text-white">{weights[k].toFixed(2)}</span>
+                  {WEIGHT_LABEL[k]} <span className="tabular-nums text-[var(--text-primary)]">{weights[k].toFixed(2)}</span>
                 </span>
-                <input type="range" min={0} max={0.6} step={0.05} value={weights[k]} onChange={(e) => updateWeight(k, Number(e.target.value))} className="mt-1 w-full accent-violet-500" aria-label={WEIGHT_LABEL[k]} />
+                <input type="range" min={0} max={0.6} step={0.05} value={weights[k]} onChange={(e) => updateWeight(k, Number(e.target.value))} className="mt-1 w-full accent-brand-700" aria-label={WEIGHT_LABEL[k]} />
               </label>
             ))}
             <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-              <div className="flex rounded-xl border border-white/10 p-0.5 text-xs font-semibold">
+              <div className="flex rounded-md border border-white/10 p-0.5 text-xs font-semibold">
                 {[5, 6].map((n) => (
-                  <button key={n} onClick={() => setDays(n)} className={`rounded-lg px-3 py-1.5 ${days === n ? 'bg-white/10 text-white' : 'text-[var(--text-muted)]'}`}>
+                  <button key={n} onClick={() => setDays(n)} className={`rounded-lg px-3 py-1.5 ${days === n ? 'pill-active' : 'text-[var(--text-muted)]'}`}>
                     {n}-day week
                   </button>
                 ))}
@@ -191,9 +191,9 @@ export default function StudioPage() {
       </section>
 
       {candidates.length === 0 ? (
-        <section className="glass rounded-[2rem] p-8 text-center sm:p-14">
-          <Gauge className="mx-auto text-violet-300" size={36} />
-          <h2 className="font-display mt-5 text-2xl font-bold text-white sm:text-3xl">Three strategies, one click</h2>
+        <section className="glass rounded-2xl p-8 text-center sm:p-14">
+          <Gauge className="mx-auto text-brand-300" size={36} />
+          <h2 className="mt-5 text-2xl font-semibold text-[var(--text-primary)] sm:text-3xl tabular-nums">Three strategies, one click</h2>
           <p className="mx-auto mt-2 max-w-xl text-sm text-[var(--text-secondary)]">
             Balanced, Compact and Preference-first candidates are solved in parallel{published.data ? `, each trying to keep the published ${published.data.label} stable` : ''}. Compare the score breakdown, then save the one you want as a draft.
           </p>
@@ -214,14 +214,14 @@ export default function StudioPage() {
                     setSelected(i);
                     setLabel(nextLabel(versions.data, `${STRATEGIES[c.tt.strategy ?? 'balanced'].label} candidate`));
                   }}
-                  className={`glass relative overflow-hidden rounded-3xl p-5 text-left transition ${selected === i ? 'border-violet-300/60 shadow-[0_0_0_1px_rgba(167,139,250,0.5),0_20px_60px_-20px_rgba(124,92,255,0.7)]' : 'hover:border-white/25'}`}
+                  className={`glass relative overflow-hidden rounded-2xl p-5 text-left transition ${selected === i ? 'border-brand-500 ring-2 ring-brand-400/25' : 'hover:border-white/20'}`}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                      <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.1em] text-[var(--text-muted)]">
                         {rank === 0 && feasible && <Crown size={13} className="text-amber-300" />} Rank #{rank + 1}
                       </p>
-                      <p className="font-display mt-1 text-xl font-bold text-white">{STRATEGIES[c.tt.strategy ?? 'balanced'].label}</p>
+                      <p className="mt-1 text-xl font-semibold text-[var(--text-primary)] tabular-nums">{STRATEGIES[c.tt.strategy ?? 'balanced'].label}</p>
                       <p className="text-xs text-[var(--text-muted)]">{STRATEGIES[c.tt.strategy ?? 'balanced'].text}</p>
                     </div>
                     <ScoreRing value={c.score.total} muted={!feasible} />
@@ -233,15 +233,15 @@ export default function StudioPage() {
                           <span className="text-[var(--text-secondary)]">
                             {k.label} <span className="text-[var(--text-muted)]">× {k.weight.toFixed(2)}</span>
                           </span>
-                          <span className="tabular-nums text-white">{Math.round(k.value * 100)}</span>
+                          <span className="tabular-nums text-[var(--text-primary)]">{Math.round(k.value * 100)}</span>
                         </div>
-                        <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-white/[0.07]">
-                          <div className="h-full rounded-full bg-[#3987e5] transition-all duration-700" style={{ width: `${k.value * 100}%` }} />
+                        <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
+                          <div className="h-full rounded-full bg-brand-600 transition-all duration-700" style={{ width: `${k.value * 100}%` }} />
                         </div>
                       </div>
                     ))}
                   </div>
-                  <div className={`mt-4 flex items-center gap-2 rounded-xl px-3 py-2 text-xs ${feasible ? 'bg-emerald-400/10 text-emerald-200' : 'bg-rose-400/10 text-rose-200'}`}>
+                  <div className={`mt-4 flex items-center gap-2 rounded-md px-3 py-2 text-xs ${feasible ? 'bg-emerald-400/10 text-emerald-300' : 'bg-rose-400/10 text-rose-300'}`}>
                     {feasible ? <CheckCircle2 size={14} /> : <XCircle size={14} />}
                     Hard constraints {c.hard.filter((h) => h.passed).length}/{c.hard.length} · {c.tt.stats.scheduledHours}/{c.tt.stats.requiredHours}h · {c.tt.stats.ms.toFixed(0)} ms
                   </div>
@@ -252,9 +252,9 @@ export default function StudioPage() {
 
           {sel && (
             <section className="grid gap-5 xl:grid-cols-[1fr_380px]">
-              <div className="glass min-w-0 overflow-hidden rounded-3xl">
-                <div className="border-b border-white/5 p-5">
-                  <h2 className="font-display text-lg font-bold text-white">{STRATEGIES[sel.tt.strategy ?? 'balanced'].label} candidate · all sections</h2>
+              <div className="glass min-w-0 overflow-hidden rounded-2xl">
+                <div className="border-b border-white/10 p-5">
+                  <h2 className="text-base font-semibold text-[var(--text-primary)]">{STRATEGIES[sel.tt.strategy ?? 'balanced'].label} candidate · all sections</h2>
                   <p className="text-sm text-[var(--text-muted)]">
                     {sel.tt.sessions.length} sessions{changed !== null ? ` · ${changed} placement${changed === 1 ? '' : 's'} differ from the published version` : ''}
                   </p>
@@ -262,7 +262,7 @@ export default function StudioPage() {
                 <div className="p-4 sm:p-5">
                   <div className="mb-3 flex gap-1.5 overflow-x-auto pb-1">
                     {sel.tt.days.map((d) => (
-                      <button key={d} onClick={() => setMatrixDay(d)} className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold ${matrixDay === d ? 'bg-white text-[#0b0d1a]' : 'bg-white/5 text-[var(--text-secondary)]'}`}>
+                      <button key={d} onClick={() => setMatrixDay(d)} className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold ${matrixDay === d ? 'pill-active' : 'bg-white/[0.06] text-[var(--text-secondary)]'}`}>
                         {d}
                       </button>
                     ))}
@@ -272,33 +272,33 @@ export default function StudioPage() {
               </div>
 
               <div className="space-y-5">
-                <div className="glass rounded-3xl p-5">
-                  <h3 className="font-display font-bold text-white">Why this score</h3>
+                <div className="glass rounded-2xl p-5">
+                  <h3 className="font-semibold text-[var(--text-primary)] tabular-nums">Why this score</h3>
                   <ul className="mt-3 space-y-2.5 text-xs">
                     {sel.score.components.map((k) => (
                       <li key={k.key} className="flex gap-2">
-                        <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-[#3987e5]" />
+                        <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-brand-600" />
                         <span className="text-[var(--text-secondary)]">
-                          <b className="text-white">{k.label}:</b> {k.note}
+                          <b className="text-[var(--text-primary)]">{k.label}:</b> {k.note}
                         </span>
                       </li>
                     ))}
                   </ul>
-                  <h3 className="font-display mt-5 font-bold text-white">Hard constraints</h3>
+                  <h3 className="mt-5 font-semibold text-[var(--text-primary)] tabular-nums">Hard constraints</h3>
                   <ul className="mt-2 space-y-1.5 text-xs">
                     {sel.hard.map((h) => (
                       <li key={h.key}>
-                        <span className={`flex items-center gap-2 ${h.passed ? 'text-[var(--text-secondary)]' : 'text-rose-200'}`}>
-                          {h.passed ? <CheckCircle2 size={13} className="text-emerald-400" /> : <XCircle size={13} className="text-rose-400" />} {h.label}
+                        <span className={`flex items-center gap-2 ${h.passed ? 'text-[var(--text-secondary)]' : 'text-rose-300'}`}>
+                          {h.passed ? <CheckCircle2 size={13} className="text-emerald-300" /> : <XCircle size={13} className="text-rose-300" />} {h.label}
                         </span>
-                        {!h.passed && <span className="ml-5 block text-[11px] text-rose-200/70">{h.violations[0]}{h.violations.length > 1 ? ` (+${h.violations.length - 1} more)` : ''}</span>}
+                        {!h.passed && <span className="ml-5 block text-[11px] text-rose-300">{h.violations[0]}{h.violations.length > 1 ? ` (+${h.violations.length - 1} more)` : ''}</span>}
                       </li>
                     ))}
                   </ul>
                 </div>
 
-                <div className="glass rounded-3xl p-5">
-                  <h3 className="font-display font-bold text-white">Save this candidate</h3>
+                <div className="glass rounded-2xl p-5">
+                  <h3 className="font-semibold text-[var(--text-primary)] tabular-nums">Save this candidate</h3>
                   <label className="mt-3 block">
                     <span className="mb-1 block text-xs text-[var(--text-secondary)]">Version label</span>
                     <input value={label} onChange={(e) => setLabel(e.target.value)} className="form-input" />
@@ -307,7 +307,7 @@ export default function StudioPage() {
                     <span className="mb-1 block text-xs text-[var(--text-secondary)]">Note for the approver (optional)</span>
                     <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} className="form-input resize-none" placeholder="e.g. adds CSE-3C, keeps labs on Tue/Thu" />
                   </label>
-                  {!sel.hard.every((h) => h.passed) && <p className="mt-3 text-xs text-amber-200">This candidate breaks a hard rule. It can be saved as a draft for reference but should not be submitted.</p>}
+                  {!sel.hard.every((h) => h.passed) && <p className="mt-3 text-xs text-amber-300">This candidate breaks a hard rule. It can be saved as a draft for reference but should not be submitted.</p>}
                   <div className="mt-4 grid grid-cols-2 gap-2">
                     <button onClick={() => save(false)} disabled={Boolean(saving)} className="btn btn-ghost">
                       {saving === 'draft' ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />} Save draft
@@ -333,9 +333,9 @@ function ScoreRing({ value, muted }: { value: number; muted?: boolean }) {
     <span className="relative flex h-16 w-16 shrink-0 items-center justify-center" aria-label={`Score ${Math.round(value * 100)}`}>
       <svg viewBox="0 0 64 64" className="h-16 w-16 -rotate-90">
         <circle cx="32" cy="32" r={r} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="6" />
-        <circle cx="32" cy="32" r={r} fill="none" stroke={muted ? '#6f7699' : '#9085e9'} strokeWidth="6" strokeLinecap="round" strokeDasharray={c} strokeDashoffset={c * (1 - value)} style={{ transition: 'stroke-dashoffset .8s' }} />
+        <circle cx="32" cy="32" r={r} fill="none" stroke={muted ? '#a3adbb' : '#285394'} strokeWidth="6" strokeLinecap="round" strokeDasharray={c} strokeDashoffset={c * (1 - value)} style={{ transition: 'stroke-dashoffset .8s' }} />
       </svg>
-      <span className="font-display absolute text-lg font-bold text-white">{Math.round(value * 100)}</span>
+      <span className="absolute text-lg font-semibold text-[var(--text-primary)] tabular-nums">{Math.round(value * 100)}</span>
     </span>
   );
 }

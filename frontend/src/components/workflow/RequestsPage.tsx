@@ -21,9 +21,9 @@ const TYPE_LABEL: Record<ChangeRequest['type'], string> = {
 };
 
 const STATUS_CHIP = {
-  pending: 'border-amber-400/30 bg-amber-400/10 text-amber-200',
+  pending: 'border-amber-400/30 bg-amber-400/10 text-amber-300',
   approved: 'border-emerald-400/30 bg-emerald-400/10 text-emerald-300',
-  rejected: 'border-rose-400/30 bg-rose-400/10 text-rose-200',
+  rejected: 'border-rose-400/30 bg-rose-400/10 text-rose-300',
 };
 
 const fmt = (iso: string | null) => (iso ? new Date(iso).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '');
@@ -81,7 +81,7 @@ export default function RequestsPage() {
 
       <div className="flex gap-1.5">
         {(['pending', 'all'] as const).map((f) => (
-          <button key={f} onClick={() => setFilter(f)} className={`rounded-full px-4 py-1.5 text-xs font-semibold ${filter === f ? 'bg-white text-[#0b0d1a]' : 'bg-white/5 text-[var(--text-secondary)]'}`}>
+          <button key={f} onClick={() => setFilter(f)} className={`rounded-full px-4 py-1.5 text-xs font-semibold ${filter === f ? 'pill-active' : 'bg-white/[0.06] text-[var(--text-secondary)]'}`}>
             {f === 'pending' ? `Pending (${(requests ?? []).filter((r) => r.status === 'pending').length})` : `All (${requests?.length ?? 0})`}
           </button>
         ))}
@@ -91,7 +91,7 @@ export default function RequestsPage() {
         {error && <p className="text-sm text-rose-300">{error}</p>}
         {!requests && !error && <div className="skeleton h-24 w-full" />}
         {requests && list.length === 0 && (
-          <div className="glass rounded-3xl p-10 text-center text-sm text-[var(--text-secondary)]">
+          <div className="glass rounded-2xl p-10 text-center text-sm text-[var(--text-secondary)]">
             <GitPullRequestArrow className="mx-auto mb-3 text-[var(--text-muted)]" /> {filter === 'pending' ? 'No pending requests.' : 'No requests yet.'}
           </div>
         )}
@@ -101,10 +101,10 @@ export default function RequestsPage() {
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-xs text-[var(--text-muted)]">#{r.id}</span>
-                  <p className="font-semibold text-white">{r.title}</p>
+                  <p className="font-semibold text-[var(--text-primary)]">{r.title}</p>
                   <span className={`chip ${STATUS_CHIP[r.status]}`}>{r.status}</span>
                   <span className="chip">{TYPE_LABEL[r.type]}</span>
-                  {r.priority === 'high' && <span className="chip border-rose-400/30 text-rose-200">high priority</span>}
+                  {r.priority === 'high' && <span className="chip border-rose-400/30 text-rose-300">high priority</span>}
                 </div>
                 {r.details && <p className="mt-2 text-sm text-[var(--text-secondary)]">{r.details}</p>}
                 <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--text-muted)]">
@@ -117,7 +117,7 @@ export default function RequestsPage() {
                   {typeof r.payload?.day === 'string' && <span>Day: {r.payload.day}</span>}
                 </p>
                 {r.resolution && (
-                  <p className="mt-2 rounded-xl bg-white/[0.04] px-3 py-2 text-xs text-[var(--text-secondary)]">
+                  <p className="mt-2 rounded-md bg-white/[0.03] px-3 py-2 text-xs text-[var(--text-secondary)]">
                     {r.resolvedBy}: “{r.resolution}”
                   </p>
                 )}
@@ -302,12 +302,12 @@ function SubstitutionPlanner({ initial, onClose }: { initial: { facultyEmail?: s
             </div>
 
             {affected.length === 0 ? (
-              <p className="rounded-2xl border border-dashed border-white/10 p-8 text-center text-sm text-[var(--text-muted)]">No classes for this teacher on {day}. Nothing to cover.</p>
+              <p className="rounded-lg border border-dashed border-white/10 p-8 text-center text-sm text-[var(--text-muted)]">No classes for this teacher on {day}. Nothing to cover.</p>
             ) : (
               <div className="space-y-3">
                 {affected.map((s) => (
-                  <div key={s.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                    <p className="text-sm font-semibold text-white">
+                  <div key={s.id} className="rounded-xl bg-white/[0.035] p-4">
+                    <p className="text-sm font-semibold text-[var(--text-primary)]">
                       {fmtHour(s.start)} · {s.subjectName} <span className="font-normal text-[var(--text-muted)]">· {s.section} · {s.room}</span>
                     </p>
                     {ranked[s.id]?.length ? (
@@ -318,12 +318,12 @@ function SubstitutionPlanner({ initial, onClose }: { initial: { facultyEmail?: s
                             <button
                               key={c.faculty.email}
                               onClick={() => setChoice((x) => ({ ...x, [s.id]: c.faculty.email }))}
-                              className={`flex items-start gap-3 rounded-xl border p-3 text-left text-xs transition ${picked ? 'border-violet-300/60 bg-violet-500/15' : 'border-white/5 bg-black/20 hover:border-white/20'}`}
+                              className={`flex items-start gap-3 rounded-md border p-3 text-left text-xs transition ${picked ? 'border-brand-400/50 bg-brand-400/10' : 'border-white/10 bg-white/[0.04] hover:border-white/20'}`}
                             >
-                              <span className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${i === 0 ? 'bg-emerald-400/20 text-emerald-200' : 'bg-white/10 text-white'}`}>{i + 1}</span>
+                              <span className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${i === 0 ? 'bg-emerald-400/15 text-emerald-300' : 'bg-white/[0.06] text-[var(--text-primary)]'}`}>{i + 1}</span>
                               <span className="min-w-0">
-                                <span className="block font-semibold text-white">
-                                  {c.faculty.name} {picked && <UserCheck size={12} className="inline text-violet-300" />}
+                                <span className="block font-semibold text-[var(--text-primary)]">
+                                  {c.faculty.name} {picked && <UserCheck size={12} className="inline text-brand-300" />}
                                 </span>
                                 <span className="block text-[var(--text-muted)]">{c.reasons.join(' · ')}</span>
                               </span>
@@ -332,7 +332,7 @@ function SubstitutionPlanner({ initial, onClose }: { initial: { facultyEmail?: s
                         })}
                       </div>
                     ) : (
-                      <p className="mt-2 text-xs text-amber-200">Nobody is free at this hour. Consider moving the class instead.</p>
+                      <p className="mt-2 text-xs text-amber-300">Nobody is free at this hour. Consider moving the class instead.</p>
                     )}
                   </div>
                 ))}

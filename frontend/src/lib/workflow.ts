@@ -82,10 +82,10 @@ export function nextLabel(versions: VersionSummary[] | null, suffix: string) {
 }
 
 export const STATUS_STYLE: Record<VersionStatus, { label: string; chip: string; dot: string }> = {
-  draft: { label: 'Draft', chip: 'border-white/15 bg-white/5 text-[var(--text-secondary)]', dot: 'bg-slate-400' },
-  submitted: { label: 'Submitted', chip: 'border-sky-400/30 bg-sky-400/10 text-sky-200', dot: 'bg-sky-400' },
-  approved: { label: 'Approved', chip: 'border-violet-400/30 bg-violet-400/10 text-violet-200', dot: 'bg-violet-400' },
-  published: { label: 'Published', chip: 'border-emerald-400/30 bg-emerald-400/10 text-emerald-300', dot: 'bg-emerald-400' },
-  archived: { label: 'Archived', chip: 'border-white/10 bg-white/[0.03] text-[var(--text-muted)]', dot: 'bg-slate-600' },
-  rejected: { label: 'Rejected', chip: 'border-rose-400/30 bg-rose-400/10 text-rose-200', dot: 'bg-rose-400' },
+  draft: { label: 'Draft', chip: 'border-white/20 bg-white/[0.06] text-[var(--text-secondary)]', dot: 'bg-slate-400' },
+  submitted: { label: 'Submitted', chip: 'border-sky-400/30 bg-sky-400/10 text-sky-300', dot: 'bg-sky-600' },
+  approved: { label: 'Approved', chip: 'border-brand-400/30 bg-brand-400/10 text-brand-300', dot: 'bg-brand-600' },
+  published: { label: 'Published', chip: 'border-emerald-400/30 bg-emerald-400/10 text-emerald-300', dot: 'bg-emerald-600' },
+  archived: { label: 'Archived', chip: 'border-white/10 bg-white/[0.03] text-[var(--text-muted)]', dot: 'bg-slate-300' },
+  rejected: { label: 'Rejected', chip: 'border-red-400/30 bg-red-400/10 text-red-300', dot: 'bg-red-600' },
 };

@@ -12,7 +12,8 @@ import { toast } from '../../lib/toast';
 import { navigate } from '../../lib/router';
 import type { PreferredWindow } from '../../lib/types';
 import { fmtHour, type Session } from '../../lib/scheduler';
-import { dateOf, downloadCsv, downloadExcel, downloadIcs, printTimetable } from '../../lib/exportTimetable';
+import { dateOf, downloadCsv, downloadExcel, downloadIcs } from '../../lib/exportTimetable';
+import { downloadPdf } from '../../lib/exportPdf';
 import { subjectColor, swatchStyle } from '../../lib/timetableStyle';
 
 const MAX_LOAD = 18;
@@ -77,7 +78,7 @@ export default function MySchedule() {
   if (!tt) {
     return (
       <div className="flex h-[60vh] flex-col items-center justify-center gap-4 text-center">
-        <Loader2 className="animate-spin text-violet-300" size={30} />
+        <Loader2 className="animate-spin text-brand-300" size={30} />
         <p className="text-[var(--text-secondary)]">{published.loading ? 'Loading your week…' : 'No timetable has been published yet.'}</p>
       </div>
     );
@@ -87,20 +88,19 @@ export default function MySchedule() {
 
   return (
     <div className="space-y-7">
-      <section className="glass relative animate-fade-up overflow-hidden rounded-3xl p-5 sm:rounded-[2rem] sm:p-9">
-        <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top_right,rgba(56,189,248,0.25),transparent_55%),radial-gradient(ellipse_at_bottom_left,rgba(124,92,255,0.25),transparent_55%)]" />
+      <section className="relative animate-fade-up py-1 sm:py-3">
         <div className="grid-fade absolute inset-0 -z-10 opacity-60" />
         <div className="flex flex-col gap-8 xl:flex-row xl:items-center xl:justify-between">
           <div>
             <p className="eyebrow">{new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}</p>
-            <h1 className="font-display mt-3 text-3xl font-bold text-white sm:text-5xl">
-              {greeting()}, {firstName}
+            <h1 className="font-serif mt-2 text-[2rem] font-semibold leading-tight text-white sm:text-[2.75rem]">
+              {greeting()}, <span className="text-gradient">{firstName}</span>
             </h1>
             <p className="mt-2 text-[var(--text-secondary)]">
               {me?.designation ?? 'Faculty'} · {me?.department ?? mine[0]?.department} · {hours} teaching hours this week
             </p>
             {!isMe && (
-              <p className="mt-3 inline-flex items-center gap-2 rounded-xl border border-amber-400/25 bg-amber-400/10 px-3 py-2 text-xs text-amber-100">
+              <p className="mt-3 inline-flex items-center gap-2 rounded-md border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-xs text-amber-300">
                 Your account isn't in the current timetable, so you're previewing a colleague's week.
               </p>
             )}
@@ -108,7 +108,7 @@ export default function MySchedule() {
               <DownloadMenu
                 label="Download my timetable"
                 actions={[
-                  { id: 'pdf', icon: 'pdf', label: 'PDF', hint: 'Print-ready weekly grid', run: () => printTimetable(`${name} — weekly timetable`) },
+                  { id: 'pdf', icon: 'pdf', label: 'PDF (school format)', hint: 'A4 timetable with subject key, ready to print', run: () => downloadPdf(tt, { groupBy: 'faculty', only: [mine[0]?.faculty ?? name], versionLabel: published.data?.label, fileName: `${name} timetable.pdf` }) },
                   { id: 'ics', icon: 'ics', label: 'Add to calendar (.ics)', hint: 'Google, Outlook or Apple · repeats weekly', run: () => downloadIcs(mine, `${name} timetable`) },
                   { id: 'xl', icon: 'excel', label: 'Excel', hint: 'Weekly grid plus a session list', run: () => downloadExcel(tt, { groupBy: 'faculty', only: [mine[0]?.faculty ?? name], fileName: `${name} timetable.xlsx` }) },
                   { id: 'csv', icon: 'csv', label: 'CSV', hint: `${mine.length} sessions`, run: () => downloadCsv(mine, `${name} timetable`) },
@@ -129,12 +129,12 @@ export default function MySchedule() {
           </div>
 
           {next && (
-            <div className="relative w-full overflow-hidden rounded-3xl border border-white/10 bg-black/25 p-5 sm:p-6 xl:w-[400px]">
+            <div className="glass relative w-full overflow-hidden rounded-2xl p-5 sm:p-6 xl:w-[420px]">
               <span className="absolute inset-y-0 left-0 w-1.5" style={{ background: subjectColor(next.color) }} />
-              <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.22em] text-sky-200">
+              <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.1em] text-sky-300">
                 <Hourglass size={13} /> Up next
               </p>
-              <p className="font-display mt-3 text-2xl font-bold text-white">{next.subjectName}</p>
+              <p className="mt-3 text-2xl font-semibold text-[var(--text-primary)] tabular-nums">{next.subjectName}</p>
               <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
                 <span className="flex items-center gap-2 text-[var(--text-secondary)]">
                   <Clock size={15} /> {next.day.slice(0, 3)} {dateOf(next.day).getDate()} · {fmtHour(next.start)}
@@ -162,18 +162,18 @@ export default function MySchedule() {
       </section>
 
       <section className="grid gap-5 xl:grid-cols-3">
-        <div className="glass rounded-3xl p-6">
-          <h2 className="font-display text-lg font-bold text-white">{focusDay === todayName ? 'Today' : focusDay}</h2>
+        <div className="glass rounded-2xl p-6">
+          <h2 className="text-base font-semibold text-[var(--text-primary)]">{focusDay === todayName ? 'Today' : focusDay}</h2>
           <p className="text-sm text-[var(--text-muted)]">{dayList.length ? `${dayList.length} class${dayList.length === 1 ? '' : 'es'}` : 'No classes — enjoy the free day'}</p>
           <ol className="relative mt-5 space-y-4 border-l border-white/10 pl-5">
             {dayList.map((s) => (
               <li key={s.id} className="relative">
-                <span className="absolute -left-[27px] top-1.5 h-3 w-3 rounded-full ring-4 ring-[#0d1022]" style={{ background: subjectColor(s.color) }} />
-                <button onClick={() => setSelected(s)} className="w-full rounded-2xl border border-white/5 bg-white/[0.03] p-3 text-left transition hover:border-white/15">
+                <span className="absolute -left-[27px] top-1.5 h-3 w-3 rounded-full ring-4 ring-[#10142a]" style={{ background: subjectColor(s.color) }} />
+                <button onClick={() => setSelected(s)} className="w-full rounded-xl bg-white/[0.035] p-3 text-left transition hover:border-white/20">
                   <p className="text-xs font-semibold text-[var(--text-muted)]">
                     {fmtHour(s.start)} – {fmtHour(s.start + s.duration)}
                   </p>
-                  <p className="mt-0.5 font-semibold text-white">{s.subjectName}</p>
+                  <p className="mt-0.5 font-semibold text-[var(--text-primary)]">{s.subjectName}</p>
                   <p className="text-xs text-[var(--text-secondary)]">
                     {s.section} · {s.room}
                   </p>
@@ -184,14 +184,14 @@ export default function MySchedule() {
 
           {isMe && (
             <div className="mt-8">
-              <h3 className="text-sm font-semibold text-white">Preferred teaching window</h3>
+              <h3 className="text-sm font-semibold text-[var(--text-primary)]">Preferred teaching window</h3>
               <p className="mt-1 text-xs text-[var(--text-muted)]">A soft preference: the generator tries to honour it, and the score shows how often it did.</p>
               <div className="mt-3 grid grid-cols-3 gap-1.5">
                 {([['any', Clock, 'Any time'], ['morning', Sun, 'Mornings'], ['afternoon', Sunset, 'Afternoons']] as const).map(([w, Icon, l]) => (
                   <button
                     key={w}
                     onClick={() => setWindow(w)}
-                    className={`flex flex-col items-center gap-1 rounded-xl border px-2 py-2.5 text-xs font-semibold transition ${(me?.preferredWindow ?? 'any') === w ? 'border-violet-300/60 bg-violet-500/15 text-white' : 'border-white/10 bg-white/[0.03] text-[var(--text-secondary)]'}`}
+                    className={`flex flex-col items-center gap-1 rounded-md border px-2 py-2.5 text-xs font-semibold transition ${(me?.preferredWindow ?? 'any') === w ? 'border-brand-400/50 bg-brand-400/10 text-[var(--text-primary)]' : 'border-white/10 bg-white/[0.03] text-[var(--text-secondary)]'}`}
                   >
                     <Icon size={15} /> {l}
                   </button>
@@ -203,15 +203,15 @@ export default function MySchedule() {
             </div>
           )}
 
-          <h3 className="mt-8 text-sm font-semibold text-white">Weekly load</h3>
-          <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-white/[0.07]">
-            <div className="h-full rounded-full bg-gradient-to-r from-violet-500 to-sky-400 transition-all duration-1000" style={{ width: `${Math.min(100, (hours / MAX_LOAD) * 100)}%` }} />
+          <h3 className="mt-8 text-sm font-semibold text-[var(--text-primary)]">Weekly load</h3>
+          <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-white/[0.06]">
+            <div className="h-full rounded-full bg-brand-600 transition-all duration-1000" style={{ width: `${Math.min(100, (hours / MAX_LOAD) * 100)}%` }} />
           </div>
           <p className="mt-1.5 text-xs text-[var(--text-muted)]">
             {hours} of {MAX_LOAD} hours
           </p>
 
-          <h3 className="mt-8 text-sm font-semibold text-white">Subjects</h3>
+          <h3 className="mt-8 text-sm font-semibold text-[var(--text-primary)]">Subjects</h3>
           <ul className="mt-3 space-y-2">
             {subjectsTaught.map((s) => (
               <li key={s.subjectCode} className="flex items-center gap-3 text-sm">
@@ -223,10 +223,10 @@ export default function MySchedule() {
           </ul>
         </div>
 
-        <div className="glass print-area overflow-hidden rounded-3xl xl:col-span-2">
-          <div className="flex items-center justify-between border-b border-white/5 px-6 py-4">
+        <div className="glass print-area overflow-hidden rounded-2xl xl:col-span-2">
+          <div className="flex items-center justify-between border-b border-white/10 px-6 py-4">
             <div>
-              <h2 className="font-display text-lg font-bold text-white">My week</h2>
+              <h2 className="text-base font-semibold text-[var(--text-primary)]">My week</h2>
               <p className="text-sm text-[var(--text-muted)]">Click a class for room, section and calendar details</p>
             </div>
           </div>

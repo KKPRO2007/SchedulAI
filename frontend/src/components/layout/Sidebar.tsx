@@ -23,27 +23,27 @@ export default function Sidebar({ active, open, onClose }: { active: PageId; ope
 
   return (
     <>
-      <div onClick={onClose} className={`fixed inset-0 z-30 bg-black/60 backdrop-blur-sm transition-opacity lg:hidden ${open ? 'opacity-100' : 'pointer-events-none opacity-0'}`} />
+      <div onClick={onClose} className={`fixed inset-0 z-30 bg-black/60 transition-opacity lg:hidden ${open ? 'opacity-100' : 'pointer-events-none opacity-0'}`} />
       <aside
-        className={`glass-strong no-print fixed inset-y-0 left-0 z-40 flex w-72 flex-col border-y-0 border-l-0 transition-transform duration-300 lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 ${open ? 'translate-x-0' : '-translate-x-full'}`}
+        className={`no-print fixed inset-y-0 left-0 z-40 flex w-64 flex-col chrome border-r border-[var(--line)] transition-transform duration-300 lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 ${open ? 'translate-x-0' : '-translate-x-full'}`}
       >
-        <div className="flex h-20 items-center px-6">
+        <div className="flex h-16 items-center border-b border-[var(--line)] px-5">
           <a href="#/" aria-label="Home">
-            <Logo size={38} sub={`${ROLE_LABEL[role]} workspace`} />
+            <Logo size={32} light sub={`${ROLE_LABEL[role]} workspace`} />
           </a>
         </div>
 
-        <div className="mx-4 mb-2 flex items-center gap-2 rounded-xl border border-white/5 bg-white/[0.03] px-3 py-2 text-xs text-[var(--text-secondary)]">
-          <RoleIcon size={14} className="text-violet-300" />
-          Signed in as <span className="font-semibold text-white">{ROLE_LABEL[role]}</span>
+        <div className="mx-3 mt-3 flex items-center gap-2 rounded-md bg-white/[0.04] px-3 py-2 text-xs text-[var(--text-secondary)] ring-1 ring-[var(--line)]">
+          <RoleIcon size={14} className="text-brand-300" />
+          Signed in as <span className="font-semibold text-[var(--text-primary)]">{ROLE_LABEL[role]}</span>
           {readOnly && <span className="ml-auto text-[10px] text-[var(--text-muted)]">{role === 'student' ? 'read-only' : 'limited'}</span>}
         </div>
 
-        <nav className="flex-1 space-y-6 overflow-y-auto px-4 py-4">
+        <nav className="flex-1 space-y-5 overflow-y-auto px-3 py-4">
           {groups.map((g) => (
             <div key={g}>
-              <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.25em] text-[var(--text-muted)]">{g}</p>
-              <div className="space-y-1">
+              <p className="mb-1.5 px-3 text-[10.5px] font-semibold uppercase tracking-[0.1em] text-[var(--text-muted)]">{g}</p>
+              <div className="space-y-0.5">
                 {items
                   .filter((n) => n.group === g)
                   .map((item) => {
@@ -55,21 +55,15 @@ export default function Sidebar({ active, open, onClose }: { active: PageId; ope
                           navigate(`/app/${item.id}`);
                           onClose();
                         }}
-                        className={`group relative flex w-full items-center gap-3 overflow-hidden rounded-xl px-3 py-2.5 text-sm font-medium transition ${
-                          isActive ? 'text-white' : 'text-[var(--text-secondary)] hover:bg-white/[0.04] hover:text-white'
+                        aria-current={isActive ? 'page' : undefined}
+                        className={`relative flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition ${
+                          isActive ? 'bg-gradient-to-r from-blue-500/20 via-indigo-500/10 to-transparent text-white' : 'text-[var(--text-secondary)] hover:bg-white/[0.05] hover:text-[var(--text-primary)]'
                         }`}
                       >
-                        {isActive && (
-                          <>
-                            <span className="absolute inset-0 rounded-xl bg-gradient-to-r from-violet-500/25 via-indigo-500/15 to-transparent" />
-                            <span className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-gradient-to-b from-violet-400 to-sky-400 shadow-[0_0_12px_rgba(139,92,246,0.9)]" />
-                          </>
-                        )}
-                        <item.icon size={18} className={`relative transition ${isActive ? 'text-violet-300' : ''}`} />
-                        <span className="relative">{item.label}</span>
-                        {item.badge && (
-                          <span className="relative ml-auto rounded-md bg-gradient-to-r from-violet-500 to-sky-400 px-1.5 py-0.5 text-[9px] font-bold tracking-wider text-white">{item.badge}</span>
-                        )}
+                        {isActive && <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r bg-gradient-to-b from-sky-400 to-indigo-500" />}
+                        <item.icon size={17} className={isActive ? 'text-brand-300' : 'text-slate-500'} />
+                        <span>{item.label}</span>
+                        {item.badge && <span className="ml-auto rounded border border-amber-400/30 bg-amber-400/10 px-1.5 py-px text-[9px] font-bold tracking-wider text-amber-300">{item.badge}</span>}
                       </button>
                     );
                   })}
@@ -78,11 +72,11 @@ export default function Sidebar({ active, open, onClose }: { active: PageId; ope
           ))}
         </nav>
 
-        <div className="p-4">
-          <div className="flex items-center gap-3 rounded-2xl border border-white/5 bg-white/[0.03] p-3">
-            <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br text-sm font-bold text-white ${readOnly ? 'from-sky-500 to-emerald-400' : 'from-violet-500 to-sky-400'}`}>{initials}</div>
+        <div className="border-t border-[var(--line)] p-3">
+          <div className="flex items-center gap-3 rounded-md p-2">
+            <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${readOnly ? 'bg-teal-600' : 'bg-brand-600'}`}>{initials}</div>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold text-white">{name}</p>
+              <p className="truncate text-sm font-semibold text-[var(--text-primary)]">{name}</p>
               <p className="truncate text-xs text-[var(--text-muted)]">{user?.title ?? user?.email}</p>
             </div>
             <button

@@ -12,16 +12,16 @@ type Props = {
 };
 
 /**
- * 3D perspective tilt that follows the pointer, with a moving glare highlight
- * and spotlight border (uses the .spotlight CSS vars --mx / --my).
+ * 3D perspective tilt that follows the pointer, with a soft moving highlight.
+ * Touch devices and reduced-motion users get a static card.
  */
-export default function Tilt({ children, className = '', max = 9, glare = true, scale = 1.015, style, onClick, as = 'div' }: Props) {
+export default function Tilt({ children, className = '', max = 8, glare = true, scale = 1.015, style, onClick, as = 'div' }: Props) {
   const ref = useRef<HTMLElement>(null);
   const raf = useRef(0);
 
   const onMove = (e: React.PointerEvent) => {
     const el = ref.current;
-    if (!el || e.pointerType === 'touch') return;
+    if (!el || e.pointerType === 'touch' || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const r = el.getBoundingClientRect();
     const px = (e.clientX - r.left) / r.width;
     const py = (e.clientY - r.top) / r.height;
@@ -49,8 +49,8 @@ export default function Tilt({ children, className = '', max = 9, glare = true, 
       onPointerMove={onMove}
       onPointerLeave={onLeave}
       onClick={onClick}
-      style={{ transition: 'transform 0.25s cubic-bezier(0.2,0.7,0.2,1)', transformStyle: 'preserve-3d', willChange: 'transform', ...style }}
-      className={`spotlight ${className}`}
+      style={{ transition: 'transform 0.25s cubic-bezier(0.2,0.7,0.2,1), box-shadow 0.25s', transformStyle: 'preserve-3d', willChange: 'transform', ...style }}
+      className={`spotlight relative ${className}`}
     >
       {children}
       {glare && (
@@ -60,7 +60,7 @@ export default function Tilt({ children, className = '', max = 9, glare = true, 
           style={{
             opacity: 'var(--glare-o, 0)',
             transition: 'opacity 0.3s',
-            background: 'radial-gradient(circle at var(--mx,50%) var(--my,50%), rgba(255,255,255,0.12), transparent 40%)',
+            background: 'radial-gradient(circle at var(--mx,50%) var(--my,50%), rgba(255,255,255,0.07), transparent 45%)',
             zIndex: 2,
           }}
         />

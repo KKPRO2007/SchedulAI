@@ -25,7 +25,7 @@ import { buildDemoCampus } from '../../lib/seed';
 import { ENTITY_ORDER } from '../../lib/entities';
 import { toast } from '../../lib/toast';
 
-const SERIES = ['#3987e5', '#d95926', '#199e70', '#c98500', '#d55181', '#9085e9'];
+import { SUBJECT_COLORS as SERIES } from '../../lib/timetableStyle';
 
 function greeting() {
   const h = new Date().getHours();
@@ -78,36 +78,36 @@ export default function Overview() {
 
   return (
     <div className="space-y-7">
-      {/* Hero */}
-      <section className="glass relative animate-fade-up overflow-hidden rounded-3xl p-5 sm:rounded-[2rem] sm:p-9">
-        <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top_right,rgba(124,92,255,0.35),transparent_55%),radial-gradient(ellipse_at_bottom_left,rgba(34,184,240,0.18),transparent_55%)]" />
-        <div className="grid-fade absolute inset-0 -z-10 opacity-70" />
-        <div className="flex flex-col gap-8 xl:flex-row xl:items-center xl:justify-between">
+      {/* Welcome */}
+      <section className="relative animate-fade-up">
+        <div className="flex flex-col gap-6 py-1 sm:py-3 2xl:flex-row 2xl:items-center 2xl:justify-between">
           <div>
-            <p className="eyebrow">{new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}</p>
-            <h1 className="font-display mt-3 text-3xl font-bold text-white sm:text-5xl">
+            <p className="text-sm text-[var(--text-muted)]">{new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
+            <h1 className="font-serif mt-2 text-[2rem] font-semibold leading-tight text-white sm:text-[2.75rem]">
               {greeting()}, <span className="text-gradient">{firstName}</span>
             </h1>
-            <p className="mt-3 max-w-xl text-[var(--text-secondary)]">
+            <p className="mt-2 max-w-xl text-sm leading-6 text-[var(--text-secondary)]">
               {tt
-                ? `Your timetable covers ${tt.stats.sections} sections with ${tt.sessions.length} sessions a week. ${tt.unscheduled.length ? `${tt.unscheduled.length} items still need a slot.` : 'Every required hour is placed.'}`
-                : 'Import your spreadsheets or load the demo campus, then generate a timetable in one click.'}
+                ? `The published timetable covers ${tt.stats.sections} sections with ${tt.sessions.length} sessions a week. ${tt.unscheduled.length ? `${tt.unscheduled.length} items still need a slot.` : 'Every required hour is placed.'}`
+                : 'Import your spreadsheets or load the demo campus, then generate a timetable.'}
             </p>
           </div>
-          <div className="grid grid-cols-3 gap-2 sm:gap-3 xl:w-[560px]">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 2xl:w-[600px] 2xl:shrink-0">
             {[
               { icon: UploadCloud, title: 'Import files', text: 'Excel, CSV, ODS, JSON', go: () => navigate('/app/import') },
               { icon: Sparkles, title: 'Generate', text: 'Scored candidates', go: () => navigate('/app/studio') },
               { icon: PackagePlus, title: 'Demo campus', text: 'Load sample data', go: loadDemo },
             ].map((a) => (
-              <Tilt key={a.title} as="button" onClick={a.go} className="group rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-left sm:p-4">
-                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-sky-400 text-white shadow-lg transition group-hover:scale-110" style={{ transform: 'translateZ(30px)' }}>
-                  <a.icon size={19} />
+              <Tilt key={a.title} as="button" max={10} onClick={a.go} className="group flex items-center gap-3 rounded-xl bg-white/[0.035] p-3 text-left transition hover:border-brand-400/50">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-white/[0.04] text-brand-300 ring-1 ring-[var(--line)]">
+                  <a.icon size={18} />
                 </span>
-                <p className="mt-3 flex items-center gap-1 text-xs font-semibold text-white sm:text-sm">
-                  {a.title} <ArrowRight size={14} className="transition group-hover:translate-x-1" />
-                </p>
-                <p className="hidden text-xs text-[var(--text-muted)] sm:block">{a.text}</p>
+                <span className="min-w-0">
+                  <span className="flex items-center gap-1 text-sm font-semibold text-[var(--text-primary)]">
+                    {a.title} <ArrowRight size={13} className="text-slate-400 transition group-hover:translate-x-0.5 group-hover:text-brand-300" />
+                  </span>
+                  <span className="block text-xs text-[var(--text-muted)]">{a.text}</span>
+                </span>
               </Tilt>
             ))}
           </div>
@@ -124,16 +124,16 @@ export default function Overview() {
 
       {/* Workflow status (synopsis §10.1) */}
       <section className="grid gap-4 md:grid-cols-3">
-        <button onClick={() => navigate('/app/timetable')} className="glass rounded-3xl p-5 text-left transition hover:border-white/25">
+        <button onClick={() => navigate('/app/timetable')} className="glass rounded-2xl p-5 text-left transition hover:border-white/20">
           <p className="eyebrow text-emerald-300">Published</p>
-          <p className="font-display mt-2 truncate text-lg font-bold text-white">{published.data?.label ?? 'Nothing published'}</p>
+          <p className="mt-2 truncate text-lg font-semibold text-[var(--text-primary)] tabular-nums">{published.data?.label ?? 'Nothing published'}</p>
           <p className="mt-1 text-xs text-[var(--text-muted)]">
             {published.data?.score ? `Score ${Math.round(published.data.score.total * 100)} · ${published.data.score.hardPassed}/${published.data.score.hardTotal} hard rules` : 'Generate and approve a version'}
           </p>
         </button>
-        <button onClick={() => navigate('/app/versions')} className="glass rounded-3xl p-5 text-left transition hover:border-white/25">
+        <button onClick={() => navigate('/app/versions')} className="glass rounded-2xl p-5 text-left transition hover:border-white/20">
           <p className="eyebrow">Awaiting approval</p>
-          <p className="font-display mt-2 text-3xl font-bold text-white">{versions.data ? versions.data.filter((v) => v.status === 'submitted').length : '—'}</p>
+          <p className="mt-2 text-3xl font-semibold text-[var(--text-primary)] tabular-nums">{versions.data ? versions.data.filter((v) => v.status === 'submitted').length : '—'}</p>
           <p className="mt-1 flex flex-wrap gap-1.5 text-xs text-[var(--text-muted)]">
             {(['draft', 'approved'] as const).map((s) => (
               <span key={s} className={`chip ${STATUS_STYLE[s].chip}`}>
@@ -142,19 +142,19 @@ export default function Overview() {
             ))}
           </p>
         </button>
-        <button onClick={() => navigate('/app/requests')} className="glass rounded-3xl p-5 text-left transition hover:border-white/25">
-          <p className="eyebrow text-amber-200">Open requests</p>
-          <p className="font-display mt-2 text-3xl font-bold text-white">{requests.data ? requests.data.filter((r) => r.status === 'pending').length : '—'}</p>
+        <button onClick={() => navigate('/app/requests')} className="glass rounded-2xl p-5 text-left transition hover:border-white/20">
+          <p className="eyebrow text-amber-300">Open requests</p>
+          <p className="mt-2 text-3xl font-semibold text-[var(--text-primary)] tabular-nums">{requests.data ? requests.data.filter((r) => r.status === 'pending').length : '—'}</p>
           <p className="mt-1 truncate text-xs text-[var(--text-muted)]">{requests.data?.find((r) => r.status === 'pending')?.title ?? 'All caught up'}</p>
         </button>
       </section>
 
       {/* Today + health */}
       <section className="grid gap-5 xl:grid-cols-3">
-        <div className="glass rounded-3xl p-6 xl:col-span-2">
+        <div className="glass rounded-2xl p-6 xl:col-span-2">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="font-display text-lg font-bold text-white">{tt ? `${today.day}'s classes` : "Today's classes"}</h2>
+              <h2 className="text-base font-semibold text-[var(--text-primary)]">{tt ? `${today.day}'s classes` : "Today's classes"}</h2>
               <p className="text-sm text-[var(--text-muted)]">{tt ? `${today.list.length} sessions across the campus` : 'Generate a timetable to see the day here'}</p>
             </div>
             <button onClick={() => navigate('/app/timetable')} className="btn btn-ghost px-3 py-2 text-xs">
@@ -163,7 +163,7 @@ export default function Overview() {
           </div>
           <div className="mt-5 max-h-[340px] space-y-2 overflow-y-auto pr-1">
             {!tt && (
-              <div className="rounded-2xl border border-dashed border-white/10 p-10 text-center">
+              <div className="rounded-lg border border-dashed border-white/10 p-10 text-center">
                 <CalendarClock className="mx-auto text-[var(--text-muted)]" size={30} />
                 <button onClick={() => navigate('/app/studio')} className="btn btn-primary mt-4">
                   <Sparkles size={16} /> Generate now
@@ -171,15 +171,15 @@ export default function Overview() {
               </div>
             )}
             {today.list.slice(0, 40).map((s, i) => (
-              <div key={s.id} className="group flex items-center gap-4 rounded-2xl border border-white/5 bg-white/[0.02] p-3 transition hover:border-white/15 hover:bg-white/[0.05]" style={{ animation: `fade-up .5s ${Math.min(i, 12) * 40}ms both` }}>
+              <div key={s.id} className="group flex items-center gap-4 rounded-xl bg-white/[0.035] p-3 transition hover:border-white/20 hover:bg-white/[0.06]" style={{ animation: `fade-up .5s ${Math.min(i, 12) * 40}ms both` }}>
                 <div className="w-20 shrink-0 text-right">
-                  <p className="text-sm font-semibold text-white">{fmtHour(s.start)}</p>
+                  <p className="text-sm font-semibold text-[var(--text-primary)]">{fmtHour(s.start)}</p>
                   <p className="text-[11px] text-[var(--text-muted)]">{s.duration}h</p>
                 </div>
                 <span className="h-10 w-1 shrink-0 rounded-full" style={{ background: SERIES[s.color % SERIES.length] }} />
                 <div className="min-w-0 flex-1">
-                  <p className="flex items-center gap-1.5 truncate font-semibold text-white">
-                    {s.isLab && <FlaskConical size={14} className="text-fuchsia-300" />} {s.subjectName}
+                  <p className="flex items-center gap-1.5 truncate font-semibold text-[var(--text-primary)]">
+                    {s.isLab && <FlaskConical size={14} className="text-rose-300" />} {s.subjectName}
                   </p>
                   <p className="truncate text-xs text-[var(--text-muted)]">
                     {s.section} · {s.faculty} · {s.room}
@@ -212,23 +212,23 @@ function HealthCard({ placed, required, issues, hasTimetable }: { placed: number
   const c = 2 * Math.PI * r;
   const ok = hasTimetable && issues === 0;
   return (
-    <div className="glass flex flex-col rounded-3xl p-6">
-      <h2 className="font-display text-lg font-bold text-white">Scheduling health</h2>
+    <div className="glass flex flex-col rounded-2xl p-6">
+      <h2 className="text-base font-semibold text-[var(--text-primary)]">Scheduling health</h2>
       <p className="text-sm text-[var(--text-muted)]">Required weekly hours that have a slot</p>
       <div className="relative mx-auto my-6 h-44 w-44">
         <svg viewBox="0 0 160 160" className="h-full w-full -rotate-90" role="img" aria-label={`${Math.round(pct * 100)} percent of hours placed`}>
           <circle cx="80" cy="80" r={r} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="14" />
-          <circle cx="80" cy="80" r={r} fill="none" stroke={ok ? '#199e70' : '#c98500'} strokeWidth="14" strokeLinecap="round" strokeDasharray={c} strokeDashoffset={c * (1 - pct)} style={{ transition: 'stroke-dashoffset 1.4s cubic-bezier(.2,.7,.2,1)', filter: `drop-shadow(0 0 12px ${ok ? '#199e70' : '#c98500'})` }} />
+          <circle cx="80" cy="80" r={r} fill="none" stroke={ok ? '#16875f' : '#b07800'} strokeWidth="14" strokeLinecap="round" strokeDasharray={c} strokeDashoffset={c * (1 - pct)} style={{ transition: 'stroke-dashoffset 1.4s cubic-bezier(.2,.7,.2,1)' }} />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <p className="font-display text-4xl font-bold text-white">{hasTimetable ? `${Math.round(pct * 100)}%` : '—'}</p>
+          <p className="text-4xl font-semibold text-[var(--text-primary)] tabular-nums">{hasTimetable ? `${Math.round(pct * 100)}%` : '—'}</p>
           <p className="text-xs text-[var(--text-muted)]">{hasTimetable ? `${placed}/${required} h` : 'not generated'}</p>
         </div>
       </div>
-      <div className={`mt-auto flex items-start gap-3 rounded-2xl border p-4 ${ok ? 'border-emerald-400/25 bg-emerald-400/[0.07]' : 'border-amber-400/25 bg-amber-400/[0.07]'}`}>
-        {ok ? <CheckCircle2 size={20} className="shrink-0 text-emerald-400" /> : <TriangleAlert size={20} className="shrink-0 text-amber-300" />}
+      <div className={`mt-auto flex items-start gap-3 rounded-lg border p-4 ${ok ? 'border-emerald-400/30 bg-emerald-400/10' : 'border-amber-400/30 bg-amber-400/10'}`}>
+        {ok ? <CheckCircle2 size={20} className="shrink-0 text-emerald-300" /> : <TriangleAlert size={20} className="shrink-0 text-amber-300" />}
         <div>
-          <p className="text-sm font-semibold text-white">{!hasTimetable ? 'No timetable yet' : ok ? 'No conflicts' : `${issues} item${issues === 1 ? '' : 's'} to review`}</p>
+          <p className="text-sm font-semibold text-[var(--text-primary)]">{!hasTimetable ? 'No timetable yet' : ok ? 'No conflicts' : `${issues} item${issues === 1 ? '' : 's'} to review`}</p>
           <p className="mt-0.5 text-xs text-[var(--text-secondary)]">{!hasTimetable ? 'Generate one from the Timetable page.' : ok ? 'Every section, teacher and room is clash-free.' : 'Open the timetable to see what could not be placed.'}</p>
         </div>
       </div>
@@ -240,8 +240,8 @@ function BarList({ title, subtitle, rows, unit }: { title: string; subtitle: str
   const [hover, setHover] = useState<number | null>(null);
   const max = Math.max(1, ...rows.map((r) => r[1]));
   return (
-    <div className="glass rounded-3xl p-6">
-      <h2 className="font-display text-lg font-bold text-white">{title}</h2>
+    <div className="glass rounded-2xl p-6">
+      <h2 className="text-base font-semibold text-[var(--text-primary)]">{title}</h2>
       <p className="text-sm text-[var(--text-muted)]">{subtitle}</p>
       <div className="mt-5 space-y-3">
         {rows.length === 0 && <p className="py-8 text-center text-sm text-[var(--text-muted)]">No data yet</p>}
@@ -249,7 +249,7 @@ function BarList({ title, subtitle, rows, unit }: { title: string; subtitle: str
           <div key={label} onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)} className="group py-0.5">
             <div className="flex items-center justify-between text-xs">
               <span className="truncate text-[var(--text-secondary)]">{label}</span>
-              <span className={`tabular-nums transition ${hover === i ? 'text-white' : 'text-[var(--text-muted)]'}`}>
+              <span className={`tabular-nums transition ${hover === i ? 'text-[var(--text-primary)]' : 'text-[var(--text-muted)]'}`}>
                 {v} {hover === i ? unit : ''}
               </span>
             </div>
@@ -268,8 +268,8 @@ function RoomMix({ rows }: { rows: { type: string; count: number; seats: number 
   const total = Math.max(1, rows.reduce((a, r) => a + r.count, 0));
   const colors = [SERIES[0], SERIES[1], SERIES[2]];
   return (
-    <div className="glass rounded-3xl p-6">
-      <h2 className="font-display text-lg font-bold text-white">Room mix</h2>
+    <div className="glass rounded-2xl p-6">
+      <h2 className="text-base font-semibold text-[var(--text-primary)]">Room mix</h2>
       <p className="text-sm text-[var(--text-muted)]">Share of rooms by type</p>
       <div className="mt-6 flex h-6 gap-[2px] overflow-hidden rounded-[6px]">
         {rows.map((r, i) =>
@@ -287,10 +287,10 @@ function RoomMix({ rows }: { rows: { type: string; count: number; seats: number 
       </div>
       <div className="mt-6 space-y-3">
         {rows.map((r, i) => (
-          <div key={r.type} onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)} className={`flex items-center gap-3 rounded-xl px-3 py-2 transition ${hover === i ? 'bg-white/[0.05]' : ''}`}>
+          <div key={r.type} onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)} className={`flex items-center gap-3 rounded-md px-3 py-2 transition ${hover === i ? 'bg-white/[0.06]' : ''}`}>
             <span className="h-3 w-3 rounded-[3px]" style={{ background: colors[i] }} />
             <span className="flex-1 text-sm text-[var(--text-secondary)]">{r.type}</span>
-            <span className="text-sm font-semibold tabular-nums text-white">{r.count}</span>
+            <span className="text-sm font-semibold tabular-nums text-[var(--text-primary)]">{r.count}</span>
             <span className="w-24 text-right text-xs tabular-nums text-[var(--text-muted)]">{r.seats.toLocaleString()} seats</span>
           </div>
         ))}
@@ -304,38 +304,31 @@ function IsoLoad({ rows }: { rows: { day: string; hours: number }[] }) {
   const [hover, setHover] = useState<number | null>(null);
   const max = Math.max(1, ...rows.map((r) => r.hours));
   return (
-    <div className="glass overflow-hidden rounded-3xl p-6 lg:col-span-2 xl:col-span-1">
-      <h2 className="font-display text-lg font-bold text-white">Teaching hours by day</h2>
+    <div className="card overflow-hidden rounded-2xl p-5 sm:p-6 lg:col-span-2 xl:col-span-1">
+      <h2 className="text-base font-semibold text-[var(--text-primary)]">Teaching hours by day</h2>
       <p className="text-sm text-[var(--text-muted)]">{rows.length ? 'Hover a column for its value' : 'Appears after you generate a timetable'}</p>
-      <div className="perspective mt-2 flex h-64 items-center justify-center" style={{ perspective: '900px' }}>
+      <div className="mt-2 flex h-64 items-center justify-center" style={{ perspective: '900px' }}>
         {rows.length === 0 ? (
-          <CalendarClock className="text-[var(--text-muted)]" size={34} />
+          <CalendarClock className="text-slate-300" size={34} />
         ) : (
           <div className="preserve-3d relative" style={{ transform: 'rotateX(58deg) rotateZ(-38deg)', width: rows.length * 46, height: 60 }}>
-            <div className="absolute -inset-4 rounded-xl border border-white/10 bg-white/[0.03]" />
+            <div className="absolute -inset-4 rounded-xl bg-white/[0.035]" />
             {rows.map((r, i) => {
               const h = Math.max(6, (r.hours / max) * 130);
               const active = hover === i;
-              const base = active ? '#5a9cf0' : SERIES[0];
               return (
-                <div
-                  key={r.day}
-                  onMouseEnter={() => setHover(i)}
-                  onMouseLeave={() => setHover(null)}
-                  className="preserve-3d absolute cursor-pointer"
-                  style={{ left: i * 46, top: 10, width: 32, height: 32 }}
-                >
+                <div key={r.day} onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)} className="preserve-3d absolute cursor-pointer" style={{ left: i * 46, top: 10, width: 32, height: 32 }}>
                   {/* top */}
-                  <div className="absolute inset-0 rounded-[3px] transition-all duration-700" style={{ background: base, transform: `translateZ(${h}px)`, boxShadow: active ? '0 0 30px #3987e5' : undefined }} />
+                  <div className="absolute inset-0 rounded-[2px] transition-all duration-700" style={{ background: active ? '#5b8fe6' : SERIES[0], transform: `translateZ(${h}px)` }} />
                   {/* front */}
-                  <div className="absolute bottom-0 left-0 w-8 origin-bottom transition-all duration-700" style={{ height: h, background: '#2a65ad', transform: 'rotateX(-90deg)' }} />
+                  <div className="absolute bottom-0 left-0 w-8 origin-bottom transition-all duration-700" style={{ height: h, background: '#2159b3', transform: 'rotateX(-90deg)' }} />
                   {/* side */}
-                  <div className="absolute right-0 top-0 h-8 origin-right transition-all duration-700" style={{ width: h, background: '#1f4d85', transform: 'rotateY(90deg)' }} />
+                  <div className="absolute right-0 top-0 h-8 origin-right transition-all duration-700" style={{ width: h, background: '#1a4790', transform: 'rotateY(90deg)' }} />
                   <span className="absolute -bottom-6 left-0 text-[10px] font-semibold text-[var(--text-muted)]" style={{ transform: 'translateZ(1px)' }}>
                     {r.day.slice(0, 3)}
                   </span>
                   {active && (
-                    <span className="absolute left-0 whitespace-nowrap rounded-md bg-white px-2 py-1 text-[11px] font-bold text-[#0b0d1a]" style={{ transform: `translateZ(${h + 30}px) rotateZ(38deg) rotateX(-58deg)` }}>
+                    <span className="absolute left-0 whitespace-nowrap rounded bg-slate-900 px-2 py-1 text-[11px] font-semibold text-white" style={{ transform: `translateZ(${h + 30}px) rotateZ(38deg) rotateX(-58deg)` }}>
                       {r.hours} h
                     </span>
                   )}
@@ -348,7 +341,7 @@ function IsoLoad({ rows }: { rows: { day: string; hours: number }[] }) {
       {rows.length > 0 && (
         <div className="flex justify-between gap-1 text-[11px] text-[var(--text-muted)]">
           {rows.map((r, i) => (
-            <span key={r.day} className={hover === i ? 'text-white' : ''}>
+            <span key={r.day} className={hover === i ? 'font-semibold text-[var(--text-primary)]' : ''}>
               {r.day.slice(0, 3)} {r.hours}h
             </span>
           ))}

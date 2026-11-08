@@ -28,8 +28,8 @@ import { notifyDataChanged, useEntity } from '../../lib/useData';
 import { navigate } from '../../lib/router';
 import PageHeader from '../ui/PageHeader';
 import Modal from '../ui/Modal';
-import StatCard, { type Tone } from './StatCard';
 import Tilt from '../fx/Tilt';
+import StatCard, { type Tone } from './StatCard';
 import { toast } from '../../lib/toast';
 
 type AnyRow = EntityMap[EntityKey] & Record<string, unknown>;
@@ -55,8 +55,8 @@ function Avatar({ text, icon: Icon }: { text: string; icon?: LucideIcon }) {
   const h = hueFor(text);
   return (
     <span
-      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xs font-bold text-white shadow-lg"
-      style={{ background: `linear-gradient(135deg, hsl(${h} 70% 55%), hsl(${(h + 50) % 360} 75% 45%))` }}
+      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold"
+      style={{ background: `hsl(${h} 60% 60% / 0.16)`, color: `hsl(${h} 75% 78%)` }}
     >
       {Icon ? <Icon size={17} /> : initials(text)}
     </span>
@@ -65,8 +65,8 @@ function Avatar({ text, icon: Icon }: { text: string; icon?: LucideIcon }) {
 
 function Status({ ok, yes = 'Available', no = 'Unavailable' }: { ok: boolean; yes?: string; no?: string }) {
   return (
-    <span className={`chip ${ok ? 'border-emerald-400/25 bg-emerald-400/10 text-emerald-300' : 'border-amber-400/25 bg-amber-400/10 text-amber-200'}`}>
-      <span className={`h-1.5 w-1.5 rounded-full ${ok ? 'bg-emerald-400' : 'bg-amber-400'}`} />
+    <span className={`chip ${ok ? 'border-emerald-400/30 bg-emerald-400/10 text-emerald-300' : 'border-amber-400/30 bg-amber-400/10 text-amber-300'}`}>
+      <span className={`h-1.5 w-1.5 rounded-full ${ok ? 'bg-emerald-600' : 'bg-amber-500'}`} />
       {ok ? yes : no}
     </span>
   );
@@ -143,7 +143,7 @@ const CONFIG: Record<
       { key: 'name', label: 'Section', sort: (r) => String(r.name), render: (r) => <Titled icon={GraduationCap} title={String(r.name)} sub={`Semester ${r.semester}`} /> },
       { key: 'department', label: 'Department', sort: (r) => String(r.department), render: (r) => String(r.department) },
       { key: 'students', label: 'Students', sort: (r) => Number(r.students), render: (r) => <Meter value={Number(r.students)} max={90} /> },
-      { key: 'shift', label: 'Shift', sort: (r) => String(r.shift), render: (r) => <span className={`chip ${r.shift === 'Shift 2' ? 'text-sky-200' : 'text-violet-200'}`}>{String(r.shift)}</span> },
+      { key: 'shift', label: 'Shift', sort: (r) => String(r.shift), render: (r) => <span className={`chip ${r.shift === 'Shift 2' ? 'text-sky-300' : 'text-brand-300'}`}>{String(r.shift)}</span> },
     ],
     stats: (rows) => {
       const s = rows as unknown as Section[];
@@ -195,7 +195,7 @@ function Person({ r }: { r: Faculty }) {
     <div className="flex items-center gap-3">
       <Avatar text={r.name} />
       <div className="min-w-0">
-        <p className="truncate font-semibold text-white">{r.name}</p>
+        <p className="truncate font-semibold text-[var(--text-primary)]">{r.name}</p>
         <p className="truncate text-xs text-[var(--text-muted)]">{r.email}</p>
       </div>
     </div>
@@ -207,7 +207,7 @@ function Titled({ icon, title, sub, mono }: { icon: LucideIcon; title: string; s
     <div className="flex items-center gap-3">
       <Avatar text={title} icon={icon} />
       <div className="min-w-0">
-        <p className="truncate font-semibold text-white">{title}</p>
+        <p className="truncate font-semibold text-[var(--text-primary)]">{title}</p>
         <p className={`truncate text-xs text-[var(--text-muted)] ${mono ? 'font-mono' : ''}`}>{sub}</p>
       </div>
     </div>
@@ -217,9 +217,9 @@ function Titled({ icon, title, sub, mono }: { icon: LucideIcon; title: string; s
 function Meter({ value, max }: { value: number; max: number }) {
   return (
     <div className="flex items-center gap-3">
-      <span className="w-8 tabular-nums text-white">{value}</span>
-      <span className="hidden h-1.5 w-20 overflow-hidden rounded-full bg-white/10 sm:block">
-        <span className="block h-full rounded-full bg-gradient-to-r from-violet-500 to-sky-400" style={{ width: `${Math.min(100, (value / max) * 100)}%` }} />
+      <span className="w-8 tabular-nums text-[var(--text-primary)]">{value}</span>
+      <span className="hidden h-1.5 w-20 overflow-hidden rounded-full bg-white/[0.06] sm:block">
+        <span className="block h-full rounded-full bg-brand-600" style={{ width: `${Math.min(100, (value / max) * 100)}%` }} />
       </span>
     </div>
   );
@@ -375,14 +375,14 @@ export default function EntityPage({ entity, readOnly = false }: { entity: Entit
         ))}
       </section>
 
-      <section className="glass overflow-hidden rounded-3xl">
-        <div className="flex flex-col gap-4 border-b border-white/5 p-5 lg:flex-row lg:items-center lg:justify-between">
+      <section className="glass overflow-hidden rounded-2xl">
+        <div className="flex flex-col gap-4 border-b border-white/10 p-5 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex min-w-0 flex-wrap gap-1.5">
             {departments.length <= 7 && departments.map((d) => (
               <button
                 key={d}
                 onClick={() => setDept(d)}
-                className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${dept === d ? 'bg-white text-[#0b0d1a]' : 'bg-white/5 text-[var(--text-secondary)] hover:bg-white/10 hover:text-white'}`}
+                className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${dept === d ? 'pill-active' : 'bg-white/[0.06] text-[var(--text-secondary)] hover:bg-white/10 hover:text-[var(--text-primary)]'}`}
               >
                 {d}
               </button>
@@ -400,11 +400,11 @@ export default function EntityPage({ entity, readOnly = false }: { entity: Entit
               <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
               <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={`Search ${def.label.toLowerCase()}…`} className="form-input py-2 pl-9" aria-label={`Search ${def.label}`} />
             </div>
-            <div className="hidden rounded-xl sm:flex border border-white/10 p-0.5">
-              <button onClick={() => setView('table')} className={`icon-btn ${view === 'table' ? 'bg-white/10 text-white' : ''}`} aria-label="Table view" title="Table view">
+            <div className="hidden rounded-md sm:flex border border-white/10 p-0.5">
+              <button onClick={() => setView('table')} className={`icon-btn ${view === 'table' ? 'bg-white/[0.06] text-[var(--text-primary)]' : ''}`} aria-label="Table view" title="Table view">
                 <Rows3 size={16} />
               </button>
-              <button onClick={() => setView('cards')} className={`icon-btn ${view === 'cards' ? 'bg-white/10 text-white' : ''}`} aria-label="Card view" title="Card view">
+              <button onClick={() => setView('cards')} className={`icon-btn ${view === 'cards' ? 'bg-white/[0.06] text-[var(--text-primary)]' : ''}`} aria-label="Card view" title="Card view">
                 <LayoutGrid size={16} />
               </button>
             </div>
@@ -429,7 +429,7 @@ export default function EntityPage({ entity, readOnly = false }: { entity: Entit
                     <th key={c.key}>
                       <button
                         onClick={() => setSort((s) => ({ key: c.key, dir: s.key === c.key ? (-s.dir as 1 | -1) : 1 }))}
-                        className={`inline-flex items-center gap-1.5 uppercase transition hover:text-white ${sort.key === c.key ? 'text-violet-200' : ''}`}
+                        className={`inline-flex items-center gap-1.5 uppercase transition hover:text-[var(--text-primary)] ${sort.key === c.key ? 'text-brand-300' : ''}`}
                       >
                         {c.label} <ArrowDownUp size={11} />
                       </button>
@@ -473,12 +473,12 @@ export default function EntityPage({ entity, readOnly = false }: { entity: Entit
         )}
         {(
           <div className={`grid gap-3 p-4 sm:grid-cols-2 sm:gap-4 sm:p-5 xl:grid-cols-3 ${view === 'table' ? 'sm:hidden' : ''}`}>
-            {visible.map((r, i) => (
-              <Tilt key={r.id} className="group rounded-2xl border border-white/5 bg-white/[0.03] p-4 sm:p-5" style={{ animation: `fade-up .5s ${Math.min(i, 20) * 30}ms both` }}>
-                <div className="flex items-start gap-3" style={{ transform: 'translateZ(30px)' }}>
+            {visible.map((r) => (
+              <Tilt key={r.id} className="card group rounded-2xl p-4 sm:p-5">
+                <div className="flex items-start gap-3">
                   <Avatar text={cfg.title_(r)} icon={cfg.icon?.(r)} />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate font-semibold text-white">{cfg.title_(r)}</p>
+                    <p className="truncate font-semibold text-[var(--text-primary)]">{cfg.title_(r)}</p>
                     <p className="truncate text-xs text-[var(--text-muted)]">{cfg.subtitle(r)}</p>
                   </div>
                   <div className={`flex transition sm:opacity-0 sm:group-hover:opacity-100 ${readOnly ? "hidden" : ""}`}>
@@ -490,9 +490,9 @@ export default function EntityPage({ entity, readOnly = false }: { entity: Entit
                     </button>
                   </div>
                 </div>
-                <div className="mt-3 grid grid-cols-2 gap-1.5 sm:mt-4 sm:flex sm:flex-wrap sm:gap-2" style={{ transform: 'translateZ(20px)' }}>
+                <div className="mt-3 grid grid-cols-2 gap-1.5 sm:mt-4 sm:flex sm:flex-wrap sm:gap-2">
                   {cfg.columns.slice(1).map((c) => (
-                    <div key={c.key} className="min-w-0 rounded-xl bg-black/20 px-2.5 py-1.5 text-xs sm:px-3 sm:py-2">
+                    <div key={c.key} className="min-w-0 rounded-md bg-white/[0.03] px-2.5 py-1.5 text-xs sm:px-3 sm:py-2">
                       <p className="text-[10px] uppercase tracking-wider text-[var(--text-muted)]">{c.label}</p>
                       <div className="mt-1 text-[var(--text-secondary)]">{c.render(r)}</div>
                     </div>
@@ -506,7 +506,7 @@ export default function EntityPage({ entity, readOnly = false }: { entity: Entit
         {data && visible.length === 0 && (
           <div className="px-5 py-16 text-center">
             <Search size={30} className="mx-auto text-[var(--text-muted)]" />
-            <p className="mt-3 font-semibold text-white">Nothing here yet</p>
+            <p className="mt-3 font-semibold text-[var(--text-primary)]">Nothing here yet</p>
             <p className="mt-1 text-sm text-[var(--text-muted)]">Try another search, add a {def.singular}, or import a file.</p>
           </div>
         )}
@@ -525,7 +525,7 @@ export default function EntityPage({ entity, readOnly = false }: { entity: Entit
                 <FieldInput key={field.key} field={field} value={form[field.key]} onChange={(v) => setForm({ ...form, [field.key]: v })} />
               ))}
             </div>
-            {formError && <p className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-2.5 text-sm text-rose-200">{formError}</p>}
+            {formError && <p className="rounded-md border border-rose-400/30 bg-rose-400/10 px-3 py-2.5 text-sm text-rose-300">{formError}</p>}
             <div className="flex justify-end gap-2 pt-2">
               <button type="button" onClick={() => setForm(null)} className="btn btn-ghost">
                 Cancel
@@ -545,14 +545,14 @@ function FieldInput({ field, value, onChange }: { field: FieldDef; value: string
   const wide = field.key === 'name' || field.key === 'email';
   if (field.kind === 'bool') {
     return (
-      <label className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/20 px-4 py-3 sm:col-span-2">
+      <label className="flex items-center justify-between gap-3 rounded-xl bg-white/[0.035] px-4 py-3 sm:col-span-2">
         <span className="text-sm text-[var(--text-secondary)]">{field.label}</span>
         <button
           type="button"
           role="switch"
           aria-checked={Boolean(value)}
           onClick={() => onChange(!value)}
-          className={`relative h-6 w-11 rounded-full transition ${value ? 'bg-gradient-to-r from-violet-500 to-sky-400' : 'bg-white/15'}`}
+          className={`relative h-6 w-11 rounded-full transition ${value ? 'bg-brand-600' : 'bg-white/10'}`}
         >
           <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${value ? 'left-[22px]' : 'left-0.5'}`} />
         </button>
@@ -563,7 +563,7 @@ function FieldInput({ field, value, onChange }: { field: FieldDef; value: string
     <label className={`block ${wide ? 'sm:col-span-2' : ''}`}>
       <span className="mb-1.5 block text-xs font-medium text-[var(--text-secondary)]">
         {field.label}
-        {field.required && <span className="text-violet-300"> *</span>}
+        {field.required && <span className="text-brand-300"> *</span>}
       </span>
       {field.kind === 'select' ? (
         <select value={String(value)} onChange={(e) => onChange(e.target.value)} className="form-input">

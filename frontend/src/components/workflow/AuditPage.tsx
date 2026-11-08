@@ -3,7 +3,7 @@ import { ScrollText, Search } from 'lucide-react';
 import PageHeader from '../ui/PageHeader';
 import { useAudit } from '../../lib/workflow';
 
-const ROLE_DOT: Record<string, string> = { admin: 'bg-violet-400', coordinator: 'bg-sky-400', faculty: 'bg-emerald-400', student: 'bg-amber-400', system: 'bg-slate-500' };
+const ROLE_DOT: Record<string, string> = { admin: 'bg-brand-600', coordinator: 'bg-sky-600', faculty: 'bg-emerald-600', student: 'bg-amber-500', system: 'bg-slate-400' };
 
 export default function AuditPage() {
   const { data, error } = useAudit();
@@ -19,11 +19,11 @@ export default function AuditPage() {
     <div className="space-y-7">
       <PageHeader eyebrow="Traceability" title="Audit log" text="Every generation, approval, publication, import and request is recorded with the actor and time. Only the event is stored, never file contents or secrets." />
 
-      <section className="glass overflow-hidden rounded-3xl">
-        <div className="flex flex-col gap-3 border-b border-white/5 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+      <section className="glass overflow-hidden rounded-2xl">
+        <div className="flex flex-col gap-3 border-b border-white/10 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
           <div className="flex flex-wrap gap-1.5">
             {['all', 'admin', 'coordinator', 'faculty', 'student'].map((r) => (
-              <button key={r} onClick={() => setRole(r)} className={`rounded-full px-3 py-1.5 text-xs font-semibold capitalize ${role === r ? 'bg-white text-[#0b0d1a]' : 'bg-white/5 text-[var(--text-secondary)]'}`}>
+              <button key={r} onClick={() => setRole(r)} className={`rounded-full px-3 py-1.5 text-xs font-semibold capitalize ${role === r ? 'pill-active' : 'bg-white/[0.06] text-[var(--text-secondary)]'}`}>
                 {r}
               </button>
             ))}
@@ -45,7 +45,7 @@ export default function AuditPage() {
             <li key={e.id} className="flex gap-3 px-4 py-3 sm:px-5">
               <span className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${ROLE_DOT[e.role] ?? 'bg-slate-500'}`} />
               <div className="min-w-0 flex-1">
-                <p className="text-sm text-white">
+                <p className="text-sm text-[var(--text-primary)]">
                   <span className="font-semibold">{e.actor}</span> <span className="text-[var(--text-secondary)]">{e.action}</span>
                 </p>
                 {e.detail && <p className="truncate text-xs text-[var(--text-muted)]">{e.detail}</p>}

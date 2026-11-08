@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Command, Database, HardDrive, Menu, Search } from 'lucide-react';
+import { ChevronRight, Database, HardDrive, Menu, Search } from 'lucide-react';
 import { NAV, PAGE_SUBTITLE, navFor, type PageId } from './nav';
 import { useRole } from '../../lib/auth';
 import { useDataMode } from '../../lib/useData';
@@ -28,21 +28,22 @@ export default function Topbar({ active, onMenu }: { active: PageId; onMenu: () 
   const results = navFor(role).filter((n) => `${n.label} ${PAGE_SUBTITLE[n.id]}`.toLowerCase().includes(query.toLowerCase()));
 
   return (
-    <header className="glass-strong no-print sticky top-0 z-20 flex h-20 items-center justify-between gap-4 border-x-0 border-t-0 px-4 sm:px-8">
+    <header className="no-print sticky top-0 z-20 flex h-16 items-center justify-between gap-4 chrome border-b border-[var(--line)] px-4 sm:px-8">
       <div className="flex min-w-0 items-center gap-3">
         <button onClick={onMenu} className="icon-btn lg:hidden" aria-label="Open menu">
           <Menu size={22} />
         </button>
-        <div className="min-w-0">
-          <h2 className="font-display truncate text-xl font-bold text-white">{page.label}</h2>
-          <p className="hidden truncate text-sm text-[var(--text-muted)] sm:block">{PAGE_SUBTITLE[active]}</p>
-        </div>
+        <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1.5 text-sm">
+          <span className="hidden text-[var(--text-muted)] sm:inline">{page.group}</span>
+          <ChevronRight size={14} className="hidden shrink-0 text-slate-500 sm:block" />
+          <span className="truncate font-semibold text-[var(--text-primary)]">{page.label}</span>
+        </nav>
       </div>
 
       <div className="flex items-center gap-3">
         <div className="relative hidden md:block">
-          <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/20 px-3 py-2 transition focus-within:border-violet-400/60 focus-within:shadow-[0_0_0_4px_rgba(124,92,255,0.15)]">
-            <Search size={16} className="text-[var(--text-muted)]" />
+          <div className="flex items-center gap-2 rounded-md border border-[var(--line-strong)] bg-white/[0.04] px-3 py-1.5 transition focus-within:border-brand-400 focus-within:ring-3 focus-within:ring-brand-400/20">
+            <Search size={15} className="text-[var(--text-muted)]" />
             <input
               ref={input}
               value={query}
@@ -57,15 +58,13 @@ export default function Topbar({ active, onMenu }: { active: PageId; onMenu: () 
                 }
                 if (e.key === 'Escape') input.current?.blur();
               }}
-              placeholder="Jump to…"
-              className="w-40 bg-transparent text-sm text-white outline-none placeholder:text-[var(--text-muted)] lg:w-52"
+              placeholder="Go to page…"
+              className="w-40 bg-transparent text-sm text-[var(--text-primary)] outline-none placeholder:text-slate-500 lg:w-52"
             />
-            <kbd className="flex items-center gap-0.5 rounded-md border border-white/10 bg-white/5 px-1.5 py-0.5 text-[10px] text-[var(--text-muted)]">
-              <Command size={10} />K
-            </kbd>
+            <kbd className="rounded border border-[var(--line)] bg-white/[0.04] px-1.5 py-px font-sans text-[10px] text-[var(--text-muted)]">Ctrl K</kbd>
           </div>
           {open && (
-            <div className="glass-strong absolute right-0 top-12 w-72 overflow-hidden rounded-2xl p-1.5 shadow-2xl">
+            <div className="absolute right-0 top-11 w-72 overflow-hidden rounded-2xl glass-strong p-1 shadow-lg">
               {results.length === 0 && <p className="px-3 py-2.5 text-sm text-[var(--text-muted)]">No matches</p>}
               {results.map((r) => (
                 <button
@@ -74,9 +73,9 @@ export default function Topbar({ active, onMenu }: { active: PageId; onMenu: () 
                     navigate(`/app/${r.id}`);
                     setQuery('');
                   }}
-                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-[var(--text-secondary)] hover:bg-white/5 hover:text-white"
+                  className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm text-[var(--text-secondary)] hover:bg-white/[0.06] hover:text-[var(--text-primary)]"
                 >
-                  <r.icon size={16} /> {r.label}
+                  <r.icon size={16} className="text-slate-400" /> {r.label}
                   <span className="ml-auto truncate text-[11px] text-[var(--text-muted)]">{PAGE_SUBTITLE[r.id]}</span>
                 </button>
               ))}
@@ -87,7 +86,7 @@ export default function Topbar({ active, onMenu }: { active: PageId; onMenu: () 
         {mode && (
           <span
             title={mode === 'server' ? 'Connected to the API and PostgreSQL' : 'No server reachable: demo data is stored in this browser'}
-            className={`chip ${mode === 'server' ? 'border-emerald-400/30 bg-emerald-400/10 text-emerald-300' : 'border-amber-400/30 bg-amber-400/10 text-amber-200'}`}
+            className={`chip ${mode === 'server' ? 'border-emerald-400/30 bg-emerald-400/10 text-emerald-300' : 'border-amber-400/30 bg-amber-400/10 text-amber-300'}`}
           >
             {mode === 'server' ? <Database size={12} /> : <HardDrive size={12} />}
             <span className="hidden sm:inline">{mode === 'server' ? 'Live database' : 'Demo data · this browser'}</span>

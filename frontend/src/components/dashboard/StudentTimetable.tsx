@@ -7,7 +7,8 @@ import DownloadMenu from '../timetable/DownloadMenu';
 import { useSession } from '../../lib/auth';
 import { usePublished } from '../../lib/workflow';
 import { fmtHour, type Session } from '../../lib/scheduler';
-import { dateOf, downloadCsv, downloadExcel, downloadIcs, printTimetable } from '../../lib/exportTimetable';
+import { dateOf, downloadCsv, downloadExcel, downloadIcs } from '../../lib/exportTimetable';
+import { downloadPdf } from '../../lib/exportPdf';
 import { subjectColor, swatchStyle } from '../../lib/timetableStyle';
 
 function nextClass(list: Session[], days: string[]) {
@@ -41,15 +42,15 @@ export default function StudentTimetable() {
   if (published.loading) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
-        <Loader2 className="animate-spin text-violet-300" size={30} />
+        <Loader2 className="animate-spin text-brand-300" size={30} />
       </div>
     );
   }
   if (!tt) {
     return (
-      <div className="glass rounded-3xl p-10 text-center">
-        <CalendarCheck2 className="mx-auto text-violet-300" size={32} />
-        <p className="font-display mt-4 text-xl font-bold text-white">No timetable published yet</p>
+      <div className="glass rounded-2xl p-10 text-center">
+        <CalendarCheck2 className="mx-auto text-brand-300" size={32} />
+        <p className="mt-4 text-xl font-semibold text-[var(--text-primary)] tabular-nums">No timetable published yet</p>
         <p className="mt-1 text-sm text-[var(--text-secondary)]">Your timetable will appear here as soon as it is approved.</p>
       </div>
     );
@@ -59,12 +60,11 @@ export default function StudentTimetable() {
 
   return (
     <div className="space-y-7">
-      <section className="glass relative animate-fade-up overflow-hidden rounded-3xl p-5 sm:rounded-[2rem] sm:p-9">
-        <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top_right,rgba(245,158,11,0.18),transparent_55%),radial-gradient(ellipse_at_bottom_left,rgba(124,92,255,0.22),transparent_55%)]" />
+      <section className="relative animate-fade-up py-1 sm:py-3">
         <div className="flex flex-col gap-6 xl:flex-row xl:items-center xl:justify-between">
           <div>
             <p className="eyebrow">{new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}</p>
-            <h1 className="font-display mt-3 text-3xl font-bold text-white sm:text-5xl">Hi {name} 👋</h1>
+            <h1 className="font-serif mt-2 text-[2rem] font-semibold leading-tight text-white sm:text-[2.75rem]">Welcome, <span className="text-gradient">{name}</span></h1>
             <p className="mt-2 flex flex-wrap items-center gap-2 text-sm text-[var(--text-secondary)]">
               <BadgeCheck size={15} className="text-emerald-300" /> {published.data?.label}
             </p>
@@ -83,7 +83,7 @@ export default function StudentTimetable() {
               <DownloadMenu
                 label="Download"
                 actions={[
-                  { id: 'pdf', icon: 'pdf', label: 'PDF', hint: 'Print-ready weekly grid', run: () => printTimetable(`${section} — ${published.data?.label}`) },
+                  { id: 'pdf', icon: 'pdf', label: 'PDF (school format)', hint: 'A4 timetable with subject key, ready to print', run: () => downloadPdf(tt, { groupBy: 'section', only: [section], versionLabel: published.data?.label, fileName: `${section} timetable.pdf` }) },
                   { id: 'ics', icon: 'ics', label: 'Add to calendar (.ics)', hint: 'Repeats weekly', run: () => downloadIcs(list, `${section} timetable`) },
                   { id: 'xl', icon: 'excel', label: 'Excel', hint: 'Weekly grid + session list', run: () => downloadExcel(tt, { groupBy: 'section', only: [section], fileName: `${section} timetable.xlsx` }) },
                   { id: 'csv', icon: 'csv', label: 'CSV', hint: `${list.length} sessions`, run: () => downloadCsv(list, `${section} timetable`) },
@@ -92,12 +92,12 @@ export default function StudentTimetable() {
             </div>
           </div>
           {next && (
-            <div className="relative w-full overflow-hidden rounded-3xl border border-white/10 bg-black/25 p-5 sm:p-6 xl:w-[400px]">
+            <div className="glass relative w-full overflow-hidden rounded-2xl p-5 sm:p-6 xl:w-[420px]">
               <span className="absolute inset-y-0 left-0 w-1.5" style={{ background: subjectColor(next.color) }} />
-              <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.22em] text-amber-200">
+              <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.1em] text-amber-300">
                 <Hourglass size={13} /> Next class
               </p>
-              <p className="font-display mt-3 text-2xl font-bold text-white">{next.subjectName}</p>
+              <p className="mt-3 text-2xl font-semibold text-[var(--text-primary)] tabular-nums">{next.subjectName}</p>
               <div className="mt-4 grid grid-cols-2 gap-3 text-sm text-[var(--text-secondary)]">
                 <span className="flex items-center gap-2">
                   <Clock size={15} /> {next.day.slice(0, 3)} {dateOf(next.day).getDate()} · {fmtHour(next.start)}
@@ -122,23 +122,23 @@ export default function StudentTimetable() {
       </section>
 
       <section className="grid gap-5 xl:grid-cols-[1fr_320px]">
-        <div className="glass print-area min-w-0 overflow-hidden rounded-3xl">
-          <div className="border-b border-white/5 px-5 py-4">
-            <h2 className="font-display text-lg font-bold text-white">{section} · weekly timetable</h2>
+        <div className="glass print-area min-w-0 overflow-hidden rounded-2xl">
+          <div className="border-b border-white/10 px-5 py-4">
+            <h2 className="text-base font-semibold text-[var(--text-primary)]">{section} · weekly timetable</h2>
             <p className="text-sm text-[var(--text-muted)]">Tap a class for room and teacher details</p>
           </div>
           <div className="p-4 sm:p-5">
             <TimetableGrid sessions={list} days={tt.days} perspective="section" onSelect={setSelected} title={`${section} — ${published.data?.label}`} />
           </div>
         </div>
-        <div className="glass rounded-3xl p-5">
-          <h3 className="font-display font-bold text-white">Subjects & teachers</h3>
+        <div className="glass rounded-2xl p-5">
+          <h3 className="font-semibold text-[var(--text-primary)] tabular-nums">Subjects & teachers</h3>
           <ul className="mt-4 space-y-3">
             {subjects.map((s) => (
               <li key={s.subjectCode} className="flex items-start gap-3">
                 <span className="mt-1 h-3 w-3 shrink-0 rounded-[3px]" style={swatchStyle(s.color)} />
                 <span className="min-w-0 text-sm">
-                  <span className="flex items-center gap-1.5 font-medium text-white">
+                  <span className="flex items-center gap-1.5 font-medium text-[var(--text-primary)]">
                     {s.subjectName} {s.isLab && <FlaskConical size={12} className="text-[var(--text-muted)]" />}
                   </span>
                   <span className="block text-xs text-[var(--text-muted)]">
