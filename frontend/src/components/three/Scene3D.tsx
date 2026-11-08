@@ -25,8 +25,11 @@ export default function Scene3D({ variant = 'app' }: { variant?: Variant }) {
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const isHero = variant === 'hero';
     const isApp = variant === 'app';
+    // Phones and low-power machines get fewer particles, a lower resolution and 30 fps.
+    const low = window.innerWidth < 768 || (navigator.hardwareConcurrency ?? 8) <= 4;
+    const density = low ? 0.45 : 1;
 
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, isApp ? 1.25 : 1.75));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, low ? 1 : isApp ? 1.25 : 1.75));
     renderer.setClearColor(0x000000, 0);
     el.appendChild(renderer.domElement);
     renderer.domElement.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;display:block';
@@ -52,7 +55,7 @@ export default function Scene3D({ variant = 'app' }: { variant?: Variant }) {
     scene.add(rim);
 
     /* Starfield with per-vertex color */
-    const starCount = isApp ? 900 : isHero ? 2600 : 1600;
+    const starCount = Math.round((isApp ? 900 : isHero ? 2600 : 1600) * density);
     const starGeo = track(new THREE.BufferGeometry());
     const pos = new Float32Array(starCount * 3);
     const col = new Float32Array(starCount * 3);
@@ -114,7 +117,7 @@ export default function Scene3D({ variant = 'app' }: { variant?: Variant }) {
     const halo = new THREE.Mesh(haloGeo, haloMat);
 
     // Orbiting ring of "timetable cells" (instanced, so it's one draw call)
-    const cellCount = isHero ? 84 : 48;
+    const cellCount = Math.round((isHero ? 84 : 48) * (low ? 0.6 : 1));
     const cellGeo = track(new THREE.BoxGeometry(0.42, 0.26, 0.05));
     const cellMat = track(new THREE.MeshStandardMaterial({ metalness: 0.3, roughness: 0.35, emissiveIntensity: 0.6, emissive: 0x111133 }));
     const cells = new THREE.InstancedMesh(cellGeo, cellMat, cellCount);
@@ -260,10 +263,14 @@ export default function Scene3D({ variant = 'app' }: { variant?: Variant }) {
       renderer.render(scene, camera);
     }
 
+    let last = 0;
     function tick() {
       if (!visible) return;
-      frame(clock.getElapsedTime());
       raf = requestAnimationFrame(tick);
+      const t = clock.getElapsedTime();
+      if (low && t - last < 1 / 30) return;
+      last = t;
+      frame(t);
     }
     if (reduced) frame(4);
     else raf = requestAnimationFrame(tick);

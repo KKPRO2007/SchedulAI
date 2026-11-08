@@ -8,7 +8,7 @@ import Login from './pages/Login';
 import Sidebar from './components/layout/Sidebar';
 import Topbar from './components/layout/Topbar';
 import { homeFor, navFor, type PageId } from './components/layout/nav';
-import Scene3D from './components/three/Scene3D';
+import Scene3D from './components/three/LazyScene';
 import { Toaster } from './components/ui/toast';
 
 const Overview = lazy(() => import('./components/dashboard/Overview'));
@@ -37,11 +37,11 @@ function Workspace({ page, role }: { page: PageId; role: Role }) {
       <Sidebar active={page} open={menuOpen} onClose={() => setMenuOpen(false)} />
       <main className="min-w-0 flex-1">
         <Topbar active={page} onMenu={() => setMenuOpen(true)} />
-        <div className="mx-auto max-w-[1400px] p-4 sm:p-8">
+        <div className="w-full p-4 sm:p-6 xl:p-8 2xl:px-10">
           <Suspense
             fallback={
               <div className="flex h-[60vh] items-center justify-center">
-                <Loader2 className="animate-spin text-violet-300" size={30} />
+                <Loader2 className="animate-spin text-brand-300" size={28} />
               </div>
             }
           >

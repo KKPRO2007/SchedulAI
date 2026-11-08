@@ -19,10 +19,10 @@ export function Toaster() {
   return createPortal(
     <div className="pointer-events-none fixed bottom-5 right-5 z-[60] flex w-[min(380px,calc(100vw-2.5rem))] flex-col gap-2" aria-live="polite">
       {items.map((t) => (
-        <div key={t.id} className="glass-strong pointer-events-auto flex items-start gap-3 rounded-2xl px-4 py-3.5 text-sm text-white shadow-2xl" style={{ animation: 'toast-in .4s cubic-bezier(.2,.7,.2,1) both' }}>
-          {t.kind === 'success' && <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-emerald-400" />}
-          {t.kind === 'error' && <AlertTriangle size={18} className="mt-0.5 shrink-0 text-rose-400" />}
-          {t.kind === 'info' && <Info size={18} className="mt-0.5 shrink-0 text-sky-400" />}
+        <div key={t.id} className="pointer-events-auto flex items-start gap-3 rounded-2xl glass-strong px-4 py-3 text-sm text-[var(--text-primary)] shadow-lg" style={{ animation: 'toast-in .4s cubic-bezier(.2,.7,.2,1) both' }}>
+          {t.kind === 'success' && <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-emerald-300" />}
+          {t.kind === 'error' && <AlertTriangle size={18} className="mt-0.5 shrink-0 text-red-300" />}
+          {t.kind === 'info' && <Info size={18} className="mt-0.5 shrink-0 text-brand-300" />}
           <span>{t.text}</span>
         </div>
       ))}

@@ -15,8 +15,8 @@ import {
   Wand2,
   X,
 } from 'lucide-react';
-import PageHeader from '../ui/PageHeader';
 import Tilt from '../fx/Tilt';
+import PageHeader from '../ui/PageHeader';
 import FilePreview from './FilePreview';
 import { ConfidenceRing, EntityDot, FileBadge } from './visuals';
 import { ENTITY_COLOR, ENTITY_LABEL, fmtSize } from '../../lib/import/entityStyle';
@@ -204,11 +204,7 @@ export default function ImportPage() {
     <div className="space-y-8">
       <PageHeader
         eyebrow="Smart import"
-        title={
-          <>
-            Drop files. <span className="text-gradient">Get a campus.</span>
-          </>
-        }
+        title="Import institutional data"
         text="Excel, CSV, ODS, JSON, with any file name and any column names. SchedulAI reads the headers, works out what each sheet is, fills in what's missing and shows you everything before saving."
         actions={
           <button onClick={loadDemoCampus} className="btn btn-ghost">
@@ -218,7 +214,7 @@ export default function ImportPage() {
       />
 
       {/* Drop zone */}
-      <Tilt max={3} glare={false} className="rounded-[2rem]">
+      <div>
         <div
           onDragEnter={(e) => {
             e.preventDefault();
@@ -236,23 +232,15 @@ export default function ImportPage() {
           role="button"
           tabIndex={0}
           aria-label="Upload files"
-          className={`glass group relative cursor-pointer overflow-hidden rounded-[2rem] p-6 text-center transition-all duration-300 sm:p-14 ${dragging ? 'scale-[1.01] border-violet-400/70 shadow-[0_0_80px_-10px_rgba(124,92,255,0.8)]' : ''}`}
+          className={`group relative cursor-pointer overflow-hidden rounded-lg border-2 border-dashed p-6 text-center transition sm:p-12 ${dragging ? 'border-brand-500 bg-brand-400/10' : 'border-[var(--line-strong)] bg-white/[0.04] hover:border-brand-400 hover:bg-white/[0.03]'}`}
         >
-          <div className="grid-fade absolute inset-0 opacity-60" />
-          <svg className="pointer-events-none absolute inset-3 h-[calc(100%-1.5rem)] w-[calc(100%-1.5rem)]" aria-hidden="true">
-            <rect x="1" y="1" width="99.5%" height="99.2%" rx="26" fill="none" stroke={dragging ? '#a78bfa' : 'rgba(148,163,255,0.25)'} strokeWidth="1.5" strokeDasharray="10 10" className={dragging ? 'animate-[dash_1s_linear_infinite]' : ''} />
-          </svg>
           <div className="relative">
-            <div className="relative mx-auto flex h-24 w-24 items-center justify-center">
-              <span className="absolute inset-0 animate-pulse-ring rounded-full border border-violet-400/50" />
-              <span className="absolute inset-0 animate-pulse-ring rounded-full border border-sky-400/40" style={{ animationDelay: '1.1s' }} />
-              <span className="relative flex h-20 w-20 animate-float items-center justify-center rounded-3xl bg-gradient-to-br from-violet-500 via-indigo-500 to-sky-400 text-white shadow-[0_20px_50px_-10px_rgba(124,92,255,0.9)]">
-                <UploadCloud size={36} />
-              </span>
-            </div>
-            <h3 className="font-display mt-7 text-2xl font-bold text-white sm:text-3xl">{dragging ? 'Release to analyse' : 'Drag & drop your files here'}</h3>
+            <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-brand-400/10 text-brand-300 ring-1 ring-brand-400/25">
+              <UploadCloud size={26} />
+            </span>
+            <h3 className="mt-4 text-lg font-semibold text-[var(--text-primary)] sm:text-xl">{dragging ? 'Release to analyse' : 'Drag & drop your files here'}</h3>
             <p className="mt-2 text-sm text-[var(--text-secondary)]">or click to browse · multiple files and multi-sheet workbooks welcome</p>
-            <div className="mt-6 flex flex-wrap justify-center gap-2">
+            <div className="mt-5 flex flex-wrap justify-center gap-1.5">
               {ACCEPTED.split(',').map((x) => (
                 <span key={x} className="chip font-mono">{x}</span>
               ))}
@@ -270,15 +258,14 @@ export default function ImportPage() {
             }}
           />
         </div>
-      </Tilt>
-      <style>{`@keyframes dash{to{stroke-dashoffset:-20}}`}</style>
+      </div>
 
       {/* Demo files */}
       <section>
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
           <div>
             <p className="eyebrow">Try it now</p>
-            <h2 className="font-display mt-1 text-2xl font-bold text-white">Demo files</h2>
+            <h2 className="mt-1 text-2xl font-semibold text-[var(--text-primary)] tabular-nums">Demo files</h2>
             <p className="mt-1 text-sm text-[var(--text-muted)]">Click a file to open it and see how each column is detected.</p>
           </div>
           <button onClick={addAllDemos} className="btn btn-ghost">
@@ -286,33 +273,33 @@ export default function ImportPage() {
           </button>
         </div>
         <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {DEMO_FILES.map((d, i) => {
+          {DEMO_FILES.map((d) => {
             const ext = d.name.split('.').pop()!.toLowerCase();
             const queued = queue.some((f) => f.name === d.name && f.demo);
             const busy = loading.includes(d.name);
             return (
-              <Tilt key={d.name} as="article" onClick={() => openDemo(d.name)} className="glass group cursor-pointer rounded-3xl p-5" style={{ animation: `fade-up .6s ${i * 70}ms both` }}>
-                <div className="flex items-start gap-4" style={{ transform: 'translateZ(35px)' }}>
-                  <div className="transition duration-500 group-hover:-rotate-6 group-hover:scale-110">
+              <Tilt key={d.name} as="article" onClick={() => openDemo(d.name)} className="card group cursor-pointer rounded-2xl p-5">
+                <div className="flex items-start gap-4">
+                  <div>
                     <FileBadge ext={ext} />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate font-semibold text-white" title={d.name}>{d.name}</p>
+                    <p className="truncate font-semibold text-[var(--text-primary)]" title={d.name}>{d.name}</p>
                     <p className="mt-1 line-clamp-2 text-xs leading-5 text-[var(--text-muted)]">{d.description}</p>
                   </div>
                 </div>
-                <div className="mt-4 flex items-center justify-between gap-2" style={{ transform: 'translateZ(20px)' }}>
+                <div className="mt-4 flex items-center justify-between gap-2">
                   <div className="flex flex-wrap gap-1.5">
                     {d.tags.map((t) => (
                       <span key={t} className="chip text-[10px]">{t}</span>
                     ))}
                   </div>
                   <div className="flex shrink-0 items-center gap-1">
-                    {queued && <CheckCircle2 size={16} className="text-emerald-400" aria-label="Added" />}
+                    {queued && <CheckCircle2 size={16} className="text-emerald-300" aria-label="Added" />}
                     <a href={demoUrl(d.name)} download onClick={(e) => e.stopPropagation()} className="icon-btn" aria-label={`Download ${d.name}`} title="Download">
                       <Download size={15} />
                     </a>
-                    <span className="icon-btn text-violet-200">{busy ? <Loader2 size={15} className="animate-spin" /> : <Eye size={15} />}</span>
+                    <span className="icon-btn text-brand-300">{busy ? <Loader2 size={15} className="animate-spin" /> : <Eye size={15} />}</span>
                   </div>
                 </div>
               </Tilt>
@@ -323,11 +310,11 @@ export default function ImportPage() {
 
       {/* Queue */}
       {(queue.length > 0 || loading.length > 0) && (
-        <section className="glass rounded-3xl p-5 sm:p-6">
+        <section className="glass rounded-2xl p-5 sm:p-6">
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="eyebrow">Step 2</p>
-              <h2 className="font-display mt-1 text-xl font-bold text-white">Files in this import</h2>
+              <h2 className="mt-1 text-xl font-semibold text-[var(--text-primary)] tabular-nums">Files in this import</h2>
             </div>
             {queue.length > 0 && (
               <button onClick={() => { setQueue([]); setPhase('idle'); }} className="btn btn-ghost px-3 py-2 text-xs">
@@ -337,11 +324,11 @@ export default function ImportPage() {
           </div>
           <div className="mt-5 space-y-3">
             {queue.map((f) => (
-              <div key={f.id} className="flex flex-col gap-4 rounded-2xl border border-white/5 bg-white/[0.025] p-4 transition hover:border-white/15 md:flex-row md:items-center">
+              <div key={f.id} className="flex flex-col gap-4 rounded-xl bg-white/[0.035] p-4 transition hover:border-white/20 md:flex-row md:items-center">
                 <div className="flex min-w-0 flex-1 items-center gap-4">
                   <FileBadge ext={f.ext} size={36} />
                   <div className="min-w-0">
-                    <p className="truncate font-semibold text-white">{f.name}</p>
+                    <p className="truncate font-semibold text-[var(--text-primary)]">{f.name}</p>
                     <p className="text-xs text-[var(--text-muted)]">
                       {fmtSize(f.size)} · {f.sheets.length} sheet{f.sheets.length === 1 ? '' : 's'} · {f.parseMs.toFixed(0)} ms
                     </p>
@@ -368,9 +355,9 @@ export default function ImportPage() {
               </div>
             ))}
             {loading.map((n) => (
-              <div key={n} className="flex items-center gap-4 rounded-2xl border border-white/5 bg-white/[0.02] p-4">
-                <Loader2 size={20} className="animate-spin text-violet-300" />
-                <span className="shimmer-text text-sm font-medium">Reading {n}…</span>
+              <div key={n} className="flex items-center gap-4 rounded-xl bg-white/[0.035] p-4">
+                <Loader2 size={20} className="animate-spin text-brand-300" />
+                <span className="text-sm font-medium text-[var(--text-secondary)]">Reading {n}…</span>
               </div>
             ))}
           </div>
@@ -379,18 +366,18 @@ export default function ImportPage() {
 
       {/* Review */}
       {queue.length > 0 && (
-        <section className="glass overflow-hidden rounded-3xl">
+        <section className="glass overflow-hidden rounded-2xl">
           <div className="flex flex-col gap-4 p-5 sm:p-6 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <p className="eyebrow">Step 3</p>
-              <h2 className="font-display mt-1 text-xl font-bold text-white">Review before saving</h2>
+              <h2 className="mt-1 text-xl font-semibold text-[var(--text-primary)] tabular-nums">Review before saving</h2>
               <p className="mt-1 text-sm text-[var(--text-muted)]">
                 {plan.sheetsUsed} sheets · {plan.cellsScanned.toLocaleString()} cells scanned · {totals.inferred} values filled in · duplicates merged
               </p>
             </div>
             <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
-            <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-white/10 bg-black/20 px-3 py-2.5 text-xs text-[var(--text-secondary)]" title="Deletes current records of each type before importing">
-              <input type="checkbox" checked={replace} onChange={(e) => setReplaceChoice(e.target.checked)} className="h-4 w-4 accent-violet-500" />
+            <label className="flex cursor-pointer items-center gap-2 rounded-xl bg-white/[0.035] px-3 py-2.5 text-xs text-[var(--text-secondary)]" title="Deletes current records of each type before importing">
+              <input type="checkbox" checked={replace} onChange={(e) => setReplaceChoice(e.target.checked)} className="h-4 w-4 accent-brand-700" />
               Replace existing data
             </label>
             <button onClick={runImport} disabled={phase === 'importing' || totals.valid === 0} className="btn btn-primary px-6 py-3">
@@ -410,17 +397,17 @@ export default function ImportPage() {
                 <button
                   key={k}
                   onClick={() => setTab(k)}
-                  className={`relative overflow-hidden rounded-2xl border p-4 text-left transition ${tab === k ? 'border-white/20 bg-white/[0.06]' : 'border-white/5 bg-white/[0.02] hover:border-white/10'}`}
+                  className={`relative overflow-hidden rounded-lg border p-4 text-left transition ${tab === k ? 'border-brand-400/50 bg-brand-400/10' : 'border-[var(--line)] bg-white/[0.04] hover:border-white/20'}`}
                 >
                   <span className="absolute inset-x-0 top-0 h-0.5" style={{ background: ENTITY_COLOR[k], opacity: tab === k ? 1 : 0.4 }} />
                   <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-2 text-sm font-semibold text-white">
+                    <span className="flex items-center gap-2 text-sm font-semibold text-[var(--text-primary)]">
                       <EntityDot entity={k} /> {ENTITY_LABEL[k]}
                     </span>
-                    {prog === 'running' && <Loader2 size={15} className="animate-spin text-violet-300" />}
-                    {prog && prog !== 'running' && <CheckCircle2 size={16} className="text-emerald-400" />}
+                    {prog === 'running' && <Loader2 size={15} className="animate-spin text-brand-300" />}
+                    {prog && prog !== 'running' && <CheckCircle2 size={16} className="text-emerald-300" />}
                   </div>
-                  <p className="font-display mt-2 text-3xl font-bold text-white">{rows.length}</p>
+                  <p className="mt-2 text-3xl font-semibold text-[var(--text-primary)] tabular-nums">{rows.length}</p>
                   <p className="mt-1 text-xs text-[var(--text-muted)]">
                     {prog && prog !== 'running' ? `${prog.inserted} added · ${prog.updated} updated` : `${rows.length - upd - errs} new · ${upd} update${errs ? ` · ${errs} with errors` : ''}`}
                   </p>
@@ -435,15 +422,14 @@ export default function ImportPage() {
 
       {/* Result */}
       {done && (
-        <section className="glass relative overflow-hidden rounded-3xl p-6 sm:p-8" style={{ animation: 'fade-up .6s both' }}>
-          <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top_left,rgba(16,185,129,0.25),transparent_60%)]" />
+        <section className="glass relative overflow-hidden rounded-2xl p-6 sm:p-8" style={{ animation: 'fade-up .6s both' }}>
           <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-start gap-4">
-              <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-300">
+              <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-emerald-400/10 text-emerald-300">
                 <CheckCircle2 size={28} />
               </span>
               <div>
-                <h3 className="font-display text-2xl font-bold text-white">
+                <h3 className="text-2xl font-semibold text-[var(--text-primary)] tabular-nums">
                   {resultTotals.inserted} added, {resultTotals.updated} updated
                 </h3>
                 <p className="mt-1 text-sm text-[var(--text-secondary)]">
@@ -451,7 +437,7 @@ export default function ImportPage() {
                   Your data is ready to schedule.
                 </p>
                 {failures.length > 0 && (
-                  <ul className="mt-3 space-y-1 text-xs text-amber-200">
+                  <ul className="mt-3 space-y-1 text-xs text-amber-300">
                     {failures.map((f) => (
                       <li key={f} className="flex items-center gap-2"><AlertTriangle size={12} /> {f}</li>
                     ))}
@@ -488,20 +474,20 @@ function PlanTable({ rows, entity, existing }: { rows: PlannedRow[]; entity: Ent
     return <p className="px-6 py-12 text-center text-sm text-[var(--text-muted)]">No {ENTITY_LABEL[entity].toLowerCase()} found in these files.</p>;
   }
   return (
-    <div className="mt-5 border-t border-white/5">
+    <div className="mt-5 border-t border-white/10">
       <div className="flex items-center justify-between px-5 py-3 text-xs text-[var(--text-muted)] sm:px-6">
         <span className="flex items-center gap-4">
-          <span className="flex items-center gap-1.5"><Sparkles size={12} className="text-violet-300" /> filled in automatically</span>
-          <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-sky-400" /> updates an existing record</span>
+          <span className="flex items-center gap-1.5"><Sparkles size={12} className="text-brand-300" /> filled in automatically</span>
+          <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-sky-600" /> updates an existing record</span>
         </span>
         <label className="flex cursor-pointer items-center gap-2">
-          <input type="checkbox" checked={onlyIssues} onChange={(e) => setOnlyIssues(e.target.checked)} className="accent-violet-500" />
+          <input type="checkbox" checked={onlyIssues} onChange={(e) => setOnlyIssues(e.target.checked)} className="accent-brand-700" />
           Only rows with filled-in values or errors
         </label>
       </div>
       <div className="max-h-[420px] overflow-auto">
         <table className="data-table w-full min-w-[760px]">
-          <thead className="sticky top-0 bg-[#0d1022]">
+          <thead className="sticky top-0 bg-[#0e1226]">
             <tr>
               <th></th>
               {fields.map((f) => (
@@ -514,23 +500,23 @@ function PlanTable({ rows, entity, existing }: { rows: PlannedRow[]; entity: Ent
             {shown.map((r, i) => {
               const isUpdate = existing.has(String(r.data[ENTITIES[entity].uniqueKey] ?? '').toLowerCase());
               return (
-                <tr key={i} className={r.error ? 'bg-rose-500/[0.06]' : ''}>
+                <tr key={i} className={r.error ? 'bg-rose-400/10' : ''}>
                   <td className="w-8">
                     {r.error ? (
                       <AlertTriangle size={15} className="text-rose-300" aria-label={r.error} />
                     ) : isUpdate ? (
-                      <span className="block h-2 w-2 rounded-full bg-sky-400" title="Updates an existing record" />
+                      <span className="block h-2 w-2 rounded-full bg-sky-600" title="Updates an existing record" />
                     ) : (
-                      <span className="block h-2 w-2 rounded-full bg-emerald-400" title="New record" />
+                      <span className="block h-2 w-2 rounded-full bg-emerald-600" title="New record" />
                     )}
                   </td>
                   {fields.map((f) => {
                     const v = r.data[f.key];
                     const inferred = r.inferred.includes(f.key);
                     return (
-                      <td key={f.key} className={inferred ? 'text-violet-200' : 'text-white'}>
+                      <td key={f.key} className={inferred ? 'text-brand-300' : 'text-[var(--text-primary)]'}>
                         <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
-                          {inferred && <Sparkles size={11} className="text-violet-300" />}
+                          {inferred && <Sparkles size={11} className="text-brand-300" />}
                           {typeof v === 'boolean' ? (v ? 'Yes' : 'No') : v === null || v === undefined || v === '' ? <span className="text-[var(--text-muted)]">—</span> : String(v)}
                         </span>
                       </td>

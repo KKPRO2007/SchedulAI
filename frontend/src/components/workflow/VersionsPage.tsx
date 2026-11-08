@@ -66,32 +66,31 @@ export default function VersionsPage() {
       />
 
       {/* Lifecycle */}
-      <section className="glass rounded-3xl p-5 sm:p-6">
+      <section className="glass rounded-2xl p-5 sm:p-6">
         <div className="flex items-center gap-2 overflow-x-auto pb-1">
           {FLOW.map((s, i) => (
             <div key={s} className="flex shrink-0 items-center gap-2">
-              <div className={`flex items-center gap-3 rounded-2xl border px-4 py-3 ${STATUS_STYLE[s].chip}`}>
+              <div className={`flex items-center gap-3 rounded-lg border px-4 py-3 ${STATUS_STYLE[s].chip}`}>
                 <span className={`h-2.5 w-2.5 rounded-full ${STATUS_STYLE[s].dot}`} />
                 <span className="text-sm font-semibold">{STATUS_STYLE[s].label}</span>
-                <span className="font-display text-lg font-bold text-white">{versions ? counts[s] : '·'}</span>
+                <span className="text-base font-semibold text-[var(--text-primary)]">{versions ? counts[s] : '·'}</span>
               </div>
               {i < FLOW.length - 1 && <ArrowRight size={16} className="text-[var(--text-muted)]" />}
             </div>
           ))}
         </div>
         <p className="mt-4 flex items-center gap-2 text-xs text-[var(--text-muted)]">
-          <ShieldCheck size={14} className="text-violet-300" />
+          <ShieldCheck size={14} className="text-brand-300" />
           {role === 'admin' ? 'You can approve, reject, publish and roll back.' : 'You can create and submit drafts. An administrator approves and publishes.'} Every step is written to the audit log.
         </p>
       </section>
 
       {published.data && (
-        <section className="glass relative overflow-hidden rounded-3xl p-5 sm:p-6">
-          <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top_left,rgba(16,185,129,0.18),transparent_60%)]" />
+        <section className="glass relative overflow-hidden rounded-2xl p-5 sm:p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="eyebrow text-emerald-300">Live for faculty & students</p>
-              <p className="font-display mt-1 text-2xl font-bold text-white">{published.data.label}</p>
+              <p className="mt-1 text-2xl font-semibold text-[var(--text-primary)] tabular-nums">{published.data.label}</p>
               <p className="text-sm text-[var(--text-muted)]">
                 Published {fmt(published.data.publishedAt)} by {published.data.reviewedBy ?? '—'} · {published.data.sessions} sessions
                 {published.data.score ? ` · score ${Math.round(published.data.score.total * 100)}` : ''}
@@ -108,17 +107,17 @@ export default function VersionsPage() {
         {error && <p className="text-sm text-rose-300">{error}</p>}
         {!versions && !error && <div className="skeleton h-24 w-full" />}
         {versions?.length === 0 && (
-          <div className="glass rounded-3xl p-10 text-center text-[var(--text-secondary)]">
+          <div className="glass rounded-2xl p-10 text-center text-[var(--text-secondary)]">
             <FileClock className="mx-auto mb-3 text-[var(--text-muted)]" /> No versions yet. Generate candidates and save one as a draft.
           </div>
         )}
         {versions?.map((v) => (
           <article key={v.id} className="glass flex flex-col gap-4 rounded-2xl p-4 sm:p-5 lg:flex-row lg:items-center">
             <div className="flex min-w-0 flex-1 items-start gap-4">
-              <span className="font-display flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/[0.05] text-sm font-bold text-white">#{v.id}</span>
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-white/[0.06] text-sm font-semibold text-[var(--text-primary)] tabular-nums">#{v.id}</span>
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <p className="font-semibold text-white">{v.label}</p>
+                  <p className="font-semibold text-[var(--text-primary)]">{v.label}</p>
                   <span className={`chip ${STATUS_STYLE[v.status].chip}`}>
                     <span className={`h-1.5 w-1.5 rounded-full ${STATUS_STYLE[v.status].dot}`} /> {STATUS_STYLE[v.status].label}
                   </span>
@@ -132,9 +131,9 @@ export default function VersionsPage() {
             </div>
             <div className="flex flex-wrap items-center gap-3 lg:justify-end">
               {v.score && (
-                <div className="flex items-center gap-3 rounded-xl bg-white/[0.04] px-3 py-2 text-xs">
+                <div className="flex items-center gap-3 rounded-md bg-white/[0.03] px-3 py-2 text-xs">
                   <span>
-                    <span className="font-display block text-lg font-bold leading-5 text-white">{Math.round(v.score.total * 100)}</span>
+                    <span className="block text-lg font-semibold leading-5 text-[var(--text-primary)] tabular-nums">{Math.round(v.score.total * 100)}</span>
                     <span className="text-[var(--text-muted)]">score</span>
                   </span>
                   <span className="text-[var(--text-secondary)]">
@@ -170,19 +169,19 @@ function VersionModal({ id, onClose }: { id: number | null; onClose: () => void 
     <Modal open wide onClose={onClose} title={v?.label ?? 'Loading…'} subtitle={v ? `${STATUS_STYLE[v.status].label} · ${v.sessions} sessions · created by ${v.createdBy}` : undefined}>
       {!v ? (
         <div className="flex h-48 items-center justify-center">
-          <Loader2 className="animate-spin text-violet-300" />
+          <Loader2 className="animate-spin text-brand-300" />
         </div>
       ) : (
         <div className="space-y-5 p-4 sm:p-6">
           {v.score && (
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-6">
-              <div className="rounded-xl bg-violet-500/15 p-3">
-                <p className="font-display text-2xl font-bold text-white">{Math.round(v.score.total * 100)}</p>
+              <div className="rounded-md bg-brand-400/10 p-3">
+                <p className="text-2xl font-semibold text-[var(--text-primary)] tabular-nums">{Math.round(v.score.total * 100)}</p>
                 <p className="text-[11px] text-[var(--text-muted)]">weighted score</p>
               </div>
               {v.score.components.map((c) => (
-                <div key={c.key} className="rounded-xl bg-white/[0.04] p-3" title={c.note}>
-                  <p className="font-display text-lg font-bold text-white">{Math.round(c.value * 100)}</p>
+                <div key={c.key} className="rounded-md bg-white/[0.03] p-3" title={c.note}>
+                  <p className="text-base font-semibold text-[var(--text-primary)]">{Math.round(c.value * 100)}</p>
                   <p className="text-[11px] text-[var(--text-muted)]">
                     {c.label} ×{c.weight.toFixed(2)}
                   </p>
@@ -192,7 +191,7 @@ function VersionModal({ id, onClose }: { id: number | null; onClose: () => void 
           )}
           <div className="flex gap-1.5 overflow-x-auto pb-1">
             {v.payload.days.map((d) => (
-              <button key={d} onClick={() => setDay(d)} className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold ${day === d ? 'bg-white text-[#0b0d1a]' : 'bg-white/5 text-[var(--text-secondary)]'}`}>
+              <button key={d} onClick={() => setDay(d)} className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold ${day === d ? 'pill-active' : 'bg-white/[0.06] text-[var(--text-secondary)]'}`}>
                 {d}
               </button>
             ))}

@@ -63,14 +63,14 @@ export default function FilePreview({
     >
       {/* Sheet tabs */}
       {file.sheets.length > 1 && (
-        <div className="flex gap-1 overflow-x-auto border-b border-white/5 px-4 pt-3">
+        <div className="flex gap-1 overflow-x-auto border-b border-white/10 px-4 pt-3">
           {file.sheets.map((s, i) => (
             <button
               key={s.name + i}
               onClick={() => setSheetIndex(i)}
-              className={`flex shrink-0 items-center gap-2 rounded-t-xl border-x border-t px-4 py-2.5 text-sm transition ${i === sheetIndex ? 'border-white/10 bg-white/[0.06] text-white' : 'border-transparent text-[var(--text-muted)] hover:text-white'}`}
+              className={`flex shrink-0 items-center gap-2 rounded-t-md border-x border-t px-4 py-2.5 text-sm transition ${i === sheetIndex ? 'border-white/10 bg-white/[0.06] text-[var(--text-primary)]' : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
             >
-              {s.primary ? <EntityDot entity={s.primary} /> : <span className="h-2 w-2 rounded-full bg-white/20" />}
+              {s.primary ? <EntityDot entity={s.primary} /> : <span className="h-2 w-2 rounded-full bg-white/10" />}
               {s.name}
             </button>
           ))}
@@ -78,12 +78,12 @@ export default function FilePreview({
       )}
 
       {/* Detection summary */}
-      <div className="grid gap-4 border-b border-white/5 p-5 lg:grid-cols-[auto_1fr_auto] lg:items-center">
+      <div className="grid gap-4 border-b border-white/10 p-5 lg:grid-cols-[auto_1fr_auto] lg:items-center">
         <div className="flex items-center gap-4">
           <ConfidenceRing value={sheet.confidence} size={56} />
           <div>
-            <p className="text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)]">Detected as</p>
-            <p className="font-display text-xl font-bold text-white">{sheet.primary ? ENTITY_LABEL[sheet.primary] : 'Not recognised'}</p>
+            <p className="text-[10px] uppercase tracking-[0.1em] text-[var(--text-muted)]">Detected as</p>
+            <p className="text-lg font-semibold text-[var(--text-primary)]">{sheet.primary ? ENTITY_LABEL[sheet.primary] : 'Not recognised'}</p>
             <p className="text-xs text-[var(--text-muted)]">
               Header on row {sheet.headerRow + 1} · {sheet.body.length} data rows · {mappedCols}/{sheet.headers.length} columns mapped
             </p>
@@ -91,7 +91,7 @@ export default function FilePreview({
         </div>
         <div className="flex flex-wrap gap-2">
           {sheet.mappings.map((m) => (
-            <span key={m.entity} className="chip text-xs text-white" style={{ borderColor: ENTITY_COLOR[m.entity] + '70', background: ENTITY_COLOR[m.entity] + '1f' }}>
+            <span key={m.entity} className="chip text-xs text-[var(--text-primary)]" style={{ borderColor: ENTITY_COLOR[m.entity] + '70', background: ENTITY_COLOR[m.entity] + '12' }}>
               <EntityDot entity={m.entity} />
               {ENTITY_LABEL[m.entity]}
               {m.derived && <span className="text-[10px] font-normal text-[var(--text-secondary)]">· extracted</span>}
@@ -112,16 +112,16 @@ export default function FilePreview({
       </div>
 
       {/* Column mapping strip */}
-      <div className="flex gap-2 overflow-x-auto border-b border-white/5 px-5 py-3">
+      <div className="flex gap-2 overflow-x-auto border-b border-white/10 px-5 py-3">
         {sheet.headers.map((h, col) => {
           const info = colInfo.get(col);
           return (
-            <div key={col} className={`flex shrink-0 items-center gap-2 rounded-xl border px-3 py-2 text-xs ${info ? 'border-white/10 bg-white/[0.04]' : 'border-dashed border-white/10 opacity-60'}`}>
-              <code className="font-mono text-sky-200">{h || `Column ${col + 1}`}</code>
+            <div key={col} className={`flex shrink-0 items-center gap-2 rounded-md border px-3 py-2 text-xs ${info ? 'border-white/10 bg-white/[0.03]' : 'border-dashed border-white/10 opacity-60'}`}>
+              <code className="font-mono text-sky-300">{h || `Column ${col + 1}`}</code>
               <ArrowRight size={12} className="text-[var(--text-muted)]" />
               {info ? (
                 info.map((x) => (
-                  <span key={x.entity} className="flex items-center gap-1.5 text-white">
+                  <span key={x.entity} className="flex items-center gap-1.5 text-[var(--text-primary)]">
                     <EntityDot entity={x.entity} /> {x.label}
                   </span>
                 ))
@@ -138,11 +138,11 @@ export default function FilePreview({
         <table className="w-max min-w-full border-separate border-spacing-0 text-xs">
           <thead className="sticky top-0 z-10">
             <tr>
-              <th className="sticky left-0 z-10 border-b border-r border-white/10 bg-[#0d1022] px-3 py-2.5 text-right font-mono text-[10px] text-[var(--text-muted)]">#</th>
+              <th className="sticky left-0 z-10 border-b border-r border-white/10 bg-[#0e1226] px-3 py-2.5 text-right font-mono text-[10px] text-[var(--text-muted)]">#</th>
               {sheet.headers.map((h, col) => {
                 const info = colInfo.get(col);
                 return (
-                  <th key={col} className="border-b border-r border-white/10 bg-[#0d1022] px-3 py-2.5 text-left font-semibold text-white">
+                  <th key={col} className="border-b border-r border-white/10 bg-white/[0.04] px-3 py-2.5 text-left font-semibold text-[var(--text-primary)]">
                     <span className="flex items-center gap-2 whitespace-nowrap">
                       {info?.map((x) => <EntityDot key={x.entity} entity={x.entity} />)}
                       {h}
@@ -155,10 +155,10 @@ export default function FilePreview({
           </thead>
           <tbody>
             {sheet.body.slice(0, PREVIEW_ROWS).map((row, r) => (
-              <tr key={r} className="hover:bg-violet-500/[0.06]">
-                <td className="sticky left-0 border-b border-r border-white/5 bg-[#0b0e1e] px-3 py-2 text-right font-mono text-[10px] text-[var(--text-muted)]">{sheet.headerRow + r + 2}</td>
+              <tr key={r} className="hover:bg-brand-400/10">
+                <td className="sticky left-0 border-b border-r border-white/10 bg-white/[0.03] px-3 py-2 text-right font-mono text-[10px] text-[var(--text-muted)]">{sheet.headerRow + r + 2}</td>
                 {sheet.headers.map((_, col) => (
-                  <td key={col} className={`max-w-[260px] truncate whitespace-nowrap border-b border-r border-white/5 px-3 py-2 ${colInfo.has(col) ? 'text-[var(--text-primary)]' : 'text-[var(--text-muted)]'}`}>
+                  <td key={col} className={`max-w-[260px] truncate whitespace-nowrap border-b border-r border-white/10 px-3 py-2 ${colInfo.has(col) ? 'text-[var(--text-primary)]' : 'text-[var(--text-muted)]'}`}>
                     {row[col]}
                   </td>
                 ))}
@@ -170,11 +170,11 @@ export default function FilePreview({
       </div>
 
       {/* Footer */}
-      <div className="flex flex-col gap-3 border-t border-white/5 p-5 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 border-t border-white/10 p-5 sm:flex-row sm:items-center sm:justify-between">
         <p className="flex items-center gap-4 text-xs text-[var(--text-muted)]">
           <span className="flex items-center gap-1.5"><Rows3 size={13} /> {sheet.body.length} rows</span>
           <span className="flex items-center gap-1.5"><Columns3 size={13} /> {sheet.headers.length} columns</span>
-          <span className="flex items-center gap-1.5"><Sparkles size={13} className="text-violet-300" /> Missing values are filled in during review</span>
+          <span className="flex items-center gap-1.5"><Sparkles size={13} className="text-brand-300" /> Missing values are filled in during review</span>
         </p>
         <div className="flex gap-2">
           {file.demo && (

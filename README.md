@@ -37,7 +37,7 @@ The demo uses a synthetic campus (5 departments, 22 sections across 4 shifts, 45
 
 | Layer | Technology | Responsibilities |
 |---|---|---|
-| Presentation | React, TypeScript, Tailwind CSS, three.js | Role workspaces, import wizard, timetable grids, 3D visuals |
+| Presentation | React, TypeScript, Tailwind CSS | Role workspaces, import wizard, timetable grids |
 | Application / API | Node.js, Express, JWT | Auth & roles, validation, bulk import, versions, requests, audit |
 | Intelligence | Constraint engine + scoring (TypeScript) | Hard/soft validation, candidate generation, substitution ranking |
 | Data | PostgreSQL (Neon) | Master data, versioned timetables (JSONB), requests, audit log |

@@ -23,21 +23,21 @@ export default function SettingsPage() {
       <PageHeader eyebrow="System" title="Settings" text="Where your data lives, and tools to reset the demo." />
 
       <section className="grid gap-5 lg:grid-cols-2">
-        <div className="glass rounded-3xl p-6">
+        <div className="glass rounded-2xl p-6">
           <div className="flex items-center gap-3">
-            <span className={`flex h-11 w-11 items-center justify-center rounded-xl ${local ? 'bg-amber-400/15 text-amber-200' : 'bg-emerald-400/15 text-emerald-300'}`}>
+            <span className={`flex h-11 w-11 items-center justify-center rounded-md ${local ? 'bg-amber-400/10 text-amber-300' : 'bg-emerald-400/10 text-emerald-300'}`}>
               {local ? <HardDrive size={20} /> : <Database size={20} />}
             </span>
             <div>
-              <h2 className="font-display text-lg font-bold text-white">{local ? 'Demo data in this browser' : 'Connected to PostgreSQL'}</h2>
+              <h2 className="text-base font-semibold text-[var(--text-primary)]">{local ? 'Demo data in this browser' : 'Connected to PostgreSQL'}</h2>
               <p className="text-sm text-[var(--text-muted)]">
                 {local ? 'No API or database was reachable, so the demo saves to local storage.' : 'Changes are saved through the Express API.'}
               </p>
             </div>
           </div>
-          <label className="mt-6 flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
+          <label className="mt-6 flex items-center justify-between gap-4 rounded-xl bg-white/[0.035] px-4 py-3">
             <span>
-              <span className="block text-sm font-medium text-white">Always use browser demo data</span>
+              <span className="block text-sm font-medium text-[var(--text-primary)]">Always use browser demo data</span>
               <span className="block text-xs text-[var(--text-muted)]">Skip the server even when it's running. Takes effect on reload.</span>
             </span>
             <input
@@ -48,35 +48,35 @@ export default function SettingsPage() {
                 else localStorage.removeItem('schedulai.mode');
                 window.location.reload();
               }}
-              className="h-5 w-5 accent-violet-500"
+              className="h-5 w-5 accent-brand-700"
             />
           </label>
         </div>
 
-        <div className="glass rounded-3xl p-6">
+        <div className="glass rounded-2xl p-6">
           <div className="flex items-center gap-3">
-            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-500/15 text-violet-200">
+            <span className="flex h-11 w-11 items-center justify-center rounded-md bg-brand-400/10 text-brand-300">
               <KeyRound size={20} />
             </span>
             <div>
-              <h2 className="font-display text-lg font-bold text-white">Demo accounts</h2>
+              <h2 className="text-base font-semibold text-[var(--text-primary)]">Demo accounts</h2>
               <p className="text-sm text-[var(--text-muted)]">Share these with anyone who wants to try the demo.</p>
             </div>
           </div>
           <div className="mt-6 grid gap-2 font-mono text-sm">
             {DEMO_ACCOUNTS.map((a) => (
-              <div key={a.role} className="flex flex-wrap items-center gap-2 rounded-xl bg-black/30 px-4 py-3">
+              <div key={a.role} className="flex flex-wrap items-center gap-2 rounded-md bg-white/[0.03] px-4 py-3">
                 <span className="w-16 font-sans text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">{a.role}</span>
-                <code className="text-violet-200">{a.email}</code>
-                <code className="text-sky-200">{a.password}</code>
+                <code className="text-brand-300">{a.email}</code>
+                <code className="text-sky-300">{a.password}</code>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="glass rounded-3xl p-6">
-        <h2 className="font-display text-lg font-bold text-white">Reset</h2>
+      <section className="glass rounded-2xl p-6">
+        <h2 className="text-base font-semibold text-[var(--text-primary)]">Reset</h2>
         <p className="text-sm text-[var(--text-muted)]">{local ? 'Affects only this browser.' : 'Browser data resets do not touch the PostgreSQL database.'}</p>
         <div className="mt-5 flex flex-wrap gap-3">
           <button onClick={clearTimetable} className="btn btn-ghost">

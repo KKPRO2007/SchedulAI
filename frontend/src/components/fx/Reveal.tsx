@@ -36,9 +36,8 @@ export default function Reveal({ children, delay = 0, className = '' }: { childr
       className={className}
       style={{
         opacity: seen ? 1 : 0,
-        transform: seen ? 'none' : 'translate3d(0, 28px, 0)',
-        filter: seen ? 'none' : 'blur(6px)',
-        transition: `opacity 0.8s ${delay}ms, transform 0.9s cubic-bezier(0.2,0.7,0.2,1) ${delay}ms, filter 0.8s ${delay}ms`,
+        transform: seen ? 'none' : 'translate3d(0, 12px, 0)',
+        transition: `opacity 0.5s ${delay}ms, transform 0.6s cubic-bezier(0.2,0.7,0.2,1) ${delay}ms`,
       }}
     >
       {children}

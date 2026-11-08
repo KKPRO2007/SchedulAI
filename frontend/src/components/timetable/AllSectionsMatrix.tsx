@@ -37,16 +37,16 @@ export default function AllSectionsMatrix({ sessions, days, onPick }: { sessions
       <table className="border-separate border-spacing-0">
         <thead>
           <tr>
-            <th className="sticky left-0 z-20 bg-[#0d1022] px-3 text-left text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--text-muted)]">Section</th>
+            <th className="sticky left-0 z-20 bg-[#0e1226] px-3 text-left text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--text-muted)]">Section</th>
             {days.map((d) => (
-              <th key={d} colSpan={HOURS.length} className="border-l border-white/10 px-1 pb-1 text-center text-xs font-semibold text-white">
+              <th key={d} colSpan={HOURS.length} className="border-l border-white/10 px-1 pb-1 text-center text-xs font-semibold text-[var(--text-primary)]">
                 {d}
               </th>
             ))}
-            <th className="px-3 text-right text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--text-muted)]">Hours</th>
+            <th className="px-3 text-right text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--text-muted)]">Hours</th>
           </tr>
           <tr>
-            <th className="sticky left-0 z-20 bg-[#0d1022]" />
+            <th className="sticky left-0 z-20 bg-[#0e1226]" />
             {days.map((d) =>
               HOURS.map((h, i) => (
                 <th key={d + h} className={`pb-2 text-center text-[9px] font-medium text-[var(--text-muted)] ${i === 0 ? 'border-l border-white/10' : ''}`} style={{ width: CELL }}>
@@ -62,9 +62,9 @@ export default function AllSectionsMatrix({ sessions, days, onPick }: { sessions
             <FragmentRows key={dept} dept={dept} span={days.length * HOURS.length + 2}>
               {rows.map(([name, g]) => (
                 <tr key={name} className="group">
-                  <td className="sticky left-0 z-10 bg-[#0d1022] py-[2px] pr-3">
+                  <td className="sticky left-0 z-10 bg-[#0e1226] py-[2px] pr-3">
                     <button onClick={() => onPick(name)} className="flex w-32 items-center gap-2 rounded-lg px-2 py-1 text-left transition group-hover:bg-white/[0.06]">
-                      <span className="text-xs font-semibold text-white">{name}</span>
+                      <span className="text-xs font-semibold text-[var(--text-primary)]">{name}</span>
                       <span className="text-[9px] text-[var(--text-muted)]">{g.shift === 'Shift 2' ? 'S2' : 'S1'}</span>
                     </button>
                   </td>
@@ -80,14 +80,14 @@ export default function AllSectionsMatrix({ sessions, days, onPick }: { sessions
                                 const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
                                 setHover({ s, x: r.left + r.width / 2, y: r.top });
                               }}
-                              className="flex items-center justify-center rounded-[5px] text-[8.5px] font-bold text-white/90 transition hover:scale-125 hover:ring-2 hover:ring-white/70"
+                              className="flex items-center justify-center rounded-[5px] text-[8.5px] font-bold text-white transition hover:scale-125 hover:ring-2 hover:ring-white/10"
                               style={{ width: CELL - 4, height: CELL - 4, ...swatchStyle(s.color) }}
                               aria-label={`${name} ${d} ${fmtHour(h)}: ${s.subjectName}`}
                             >
                               {s.isLab ? 'L' : abbr(s.subjectName)}
                             </button>
                           ) : (
-                            <span className="block rounded-[5px] bg-white/[0.035]" style={{ width: CELL - 4, height: CELL - 4, opacity: h === 13 ? 0.4 : 1 }} />
+                            <span className="block rounded-[5px] bg-white/[0.03]" style={{ width: CELL - 4, height: CELL - 4, opacity: h === 13 ? 0.4 : 1 }} />
                           )}
                         </td>
                       );
@@ -101,8 +101,8 @@ export default function AllSectionsMatrix({ sessions, days, onPick }: { sessions
         </tbody>
       </table>
       {hover && (
-        <div className="glass-strong pointer-events-none fixed z-50 w-60 -translate-x-1/2 -translate-y-full rounded-xl p-3 text-xs shadow-2xl" style={{ left: hover.x, top: hover.y - 8 }}>
-          <p className="font-semibold text-white">{hover.s.subjectName}</p>
+        <div className="glass-strong pointer-events-none fixed z-50 w-60 -translate-x-1/2 -translate-y-full rounded-2xl p-3 text-xs shadow-lg" style={{ left: hover.x, top: hover.y - 8 }}>
+          <p className="font-semibold text-[var(--text-primary)]">{hover.s.subjectName}</p>
           <p className="mt-1 text-[var(--text-secondary)]">
             {hover.s.day} · {fmtHour(hover.s.start)}–{fmtHour(hover.s.start + hover.s.duration)}
           </p>
@@ -119,7 +119,7 @@ function FragmentRows({ dept, span, children }: { dept: string; span: number; ch
   return (
     <>
       <tr>
-        <td colSpan={span} className="sticky left-0 pb-1 pt-4 text-[10px] font-bold uppercase tracking-[0.22em] text-violet-200/80">
+        <td colSpan={span} className="sticky left-0 pb-1 pt-4 text-[10px] font-bold uppercase tracking-[0.1em] text-brand-300">
           {dept}
         </td>
       </tr>
