@@ -94,17 +94,39 @@ export function scoreTimetable(
   weights: Weights = DEFAULT_WEIGHTS
 ): ScoreReport {
   const hard = checkHardConstraints(tt, ctx);
-
+ 
   // Workload balance: 1 − coefficient of variation of load relative to each teacher's limit.
   const load = new Map<string, number>();
-  tt.sessions.forEach((s) => load.set(s.facultyEmail, (load.get(s.facultyEmail) ?? 0) + s.duration));
+
+  tt.sessions.forEach((s) => {
+    const email = s.facultyEmail.toLowerCase();
+    load.set(email, (load.get(email) ?? 0) + s.duration);
+  });
+
   const facBy = new Map(ctx.faculty.map((f) => [f.email.toLowerCase(), f]));
-  const ratios = [...load.entries()].map(([e, h]) => h / (facBy.get(e.toLowerCase())?.maxWorkload ?? 18));
+
+  const workloadFaculty = ctx.faculty.filter(
+    (f) => f.available || load.has(f.email.toLowerCase())
+  );
+
+  const ratios = workloadFaculty.map(
+    (f) => (load.get(f.email.toLowerCase()) ?? 0) / (f.maxWorkload ?? 18)
+  );
+
   const mean = ratios.reduce((a, b) => a + b, 0) / (ratios.length || 1);
-  const sd = Math.sqrt(ratios.reduce((a, b) => a + (b - mean) ** 2, 0) / (ratios.length || 1));
+  const sd = Math.sqrt(
+    ratios.reduce((a, b) => a + (b - mean) ** 2, 0) / (ratios.length || 1)
+  );
+
   const workload = clamp(1 - (mean ? sd / mean : 0));
-  const maxLoad = Math.max(0, ...load.values());
-  const minLoad = Math.min(...(load.size ? load.values() : [0]));
+
+  const workloadHours = workloadFaculty.map(
+    (f) => load.get(f.email.toLowerCase()) ?? 0
+  );
+
+  const maxLoad = Math.max(0, ...workloadHours);
+  const minLoad = Math.min(...(workloadHours.length ? workloadHours : [0]));
+
 
   // Preference satisfaction: share of teaching hours inside each teacher's preferred window.
   let prefHours = 0;
