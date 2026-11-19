@@ -12,7 +12,7 @@ import authRoutes from './routes/auth.js';
 import versionsRoutes from './routes/versions.js';
 import requestsRoutes from './routes/requests.js';
 import auditRoutes from './routes/audit.js';
-
+import assistantRoutes from './routes/assistant.js';
 dotenv.config({ quiet: true });
 
 // Create tables once per process (or per serverless cold start).
@@ -59,7 +59,7 @@ app.use('/api/rooms', roomsRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/sections', sectionsRoutes);
 app.use('/api/subjects', subjectsRoutes);
-
+app.use('/api/assistant', assistantRoutes);
 app.use('/api', (req, res) => res.status(404).json({ error: 'Not found' }));
 
 app.use((err, req, res, next) => {
