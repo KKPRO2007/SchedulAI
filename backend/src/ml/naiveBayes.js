@@ -72,18 +72,22 @@ export function predictIntent(model, text) {
   return { intent: ranked[0].intent, confidence };
 }
 
-export function evaluateIntentModel(model, examples) {
+export function evaluateIntentModel(model, examples, { confidenceThreshold = 0 } = {}) {
   const intents = Object.keys(model.labels).sort();
+  const predictedLabels = [...intents, 'unknown'];
   const confusion = Object.fromEntries(intents.map((actual) => [
     actual,
-    Object.fromEntries(intents.map((predicted) => [predicted, 0])),
+    Object.fromEntries(predictedLabels.map((predicted) => [predicted, 0])),
   ]));
   let correct = 0;
+  let accepted = 0;
 
   for (const example of examples) {
-    const { intent: predicted } = predictIntent(model, example.text);
+    const prediction = predictIntent(model, example.text);
+    const predicted = prediction.confidence >= confidenceThreshold ? prediction.intent : 'unknown';
     confusion[example.intent][predicted] += 1;
     if (predicted === example.intent) correct += 1;
+    if (predicted !== 'unknown') accepted += 1;
   }
 
   const perIntent = Object.fromEntries(intents.map((intent) => {
@@ -103,7 +107,25 @@ export function evaluateIntentModel(model, examples) {
     examples: examples.length,
     accuracy: examples.length ? correct / examples.length : 0,
     macroF1,
+    coverage: examples.length ? accepted / examples.length : 0,
+    selectiveAccuracy: accepted ? correct / accepted : 0,
     perIntent,
     confusion,
   };
+}
+
+export function calibrateConfidenceThreshold(model, examples) {
+  const predictions = examples.map((example) => predictIntent(model, example.text));
+  const candidates = new Set([0, ...predictions.map(({ confidence }) => Math.min(1, confidence + Number.EPSILON))]);
+  let best = { threshold: 0, metrics: evaluateIntentModel(model, examples) };
+
+  for (const threshold of candidates) {
+    const metrics = evaluateIntentModel(model, examples, { confidenceThreshold: threshold });
+    if (
+      metrics.macroF1 > best.metrics.macroF1
+      || (metrics.macroF1 === best.metrics.macroF1 && metrics.coverage > best.metrics.coverage)
+    ) best = { threshold, metrics };
+  }
+
+  return best;
 }

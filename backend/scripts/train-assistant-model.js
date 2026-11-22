@@ -18,6 +18,7 @@ const artifact = {
   trainedAt: new Date().toISOString(),
   sampleCount: examples.length,
   intentCounts: evaluation.intentCounts,
+  confidenceThreshold: evaluation.confidenceThreshold,
   evaluation: { ...evaluation.split, ...evaluation.metrics },
   vocabulary: model.vocabulary,
   labels: model.labels,
@@ -26,5 +27,5 @@ const artifact = {
 await mkdir(path.dirname(outputPath), { recursive: true });
 await writeFile(outputPath, `${JSON.stringify(artifact, null, 2)}\n`);
 console.log(`Trained ${artifact.algorithm} using ${artifact.sampleCount} examples and ${artifact.vocabulary.length} tokens.`);
-console.log(`Held-out accuracy: ${(artifact.evaluation.accuracy * 100).toFixed(1)}% · macro F1: ${(artifact.evaluation.macroF1 * 100).toFixed(1)}% (${artifact.evaluation.holdoutExamples} questions).`);
+console.log(`Confidence threshold: ${artifact.confidenceThreshold.toFixed(3)} · held-out accuracy: ${(artifact.evaluation.accuracy * 100).toFixed(1)}% · macro F1: ${(artifact.evaluation.macroF1 * 100).toFixed(1)}% (${artifact.evaluation.holdoutExamples} questions).`);
 console.log(`Saved ${path.relative(root, outputPath)}`);

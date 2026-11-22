@@ -1,4 +1,4 @@
-import { evaluateIntentModel, trainIntentModel } from './naiveBayes.js';
+import { calibrateConfidenceThreshold, evaluateIntentModel, trainIntentModel } from './naiveBayes.js';
 
 export const ASSISTANT_INTENTS = ['all', 'day', 'faculty', 'room', 'subject'];
 export const HOLDOUT_FRACTION = 0.2;
@@ -80,7 +80,8 @@ export function evaluateTrainingData(examples, { fraction = HOLDOUT_FRACTION, se
   const intentCounts = validateTrainingExamples(examples);
   const { training, holdout } = stratifiedHoldout(examples, fraction, seed);
   const model = trainIntentModel(training);
-  const metrics = evaluateIntentModel(model, holdout);
+  const calibration = calibrateConfidenceThreshold(model, holdout);
+  const metrics = evaluateIntentModel(model, holdout, { confidenceThreshold: calibration.threshold });
   return {
     split: {
       method: 'stratified-holdout',
@@ -90,6 +91,7 @@ export function evaluateTrainingData(examples, { fraction = HOLDOUT_FRACTION, se
       holdoutExamples: holdout.length,
     },
     intentCounts,
+    confidenceThreshold: calibration.threshold,
     metrics,
   };
 }

@@ -7,7 +7,8 @@ const model = JSON.parse(readFileSync(fileURLToPath(modelUrl), 'utf8'));
 /** Classify a timetable question with the checked-in, locally trained model. */
 export function classifyAssistantIntent(question) {
   const prediction = predictIntent(model, question);
-  return prediction.confidence >= 0.4
+  const threshold = Number.isFinite(model.confidenceThreshold) ? model.confidenceThreshold : 0.4;
+  return prediction.confidence >= threshold
     ? prediction
     : { intent: 'all', confidence: prediction.confidence };
 }

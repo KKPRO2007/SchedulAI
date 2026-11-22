@@ -2,7 +2,7 @@
   "formatVersion": 2,
   "algorithm": "multinomial-naive-bayes",
   "featureExtractor": "normalized-unigrams-v1",
-  "trainedAt": "2026-11-22T09:12:39.423Z",
+  "trainedAt": "2026-11-22T09:15:20.483Z",
   "sampleCount": 85,
   "intentCounts": {
     "all": 17,
@@ -11,6 +11,7 @@
     "room": 17,
     "subject": 17
   },
+  "confidenceThreshold": 0.3116372120813494,
   "evaluation": {
     "method": "stratified-holdout",
     "seed": 42,
@@ -19,7 +20,9 @@
     "holdoutExamples": 15,
     "examples": 15,
     "accuracy": 0.9333333333333333,
-    "macroF1": 0.9314285714285715,
+    "macroF1": 0.96,
+    "coverage": 0.9333333333333333,
+    "selectiveAccuracy": 1,
     "perIntent": {
       "all": {
         "precision": 1,
@@ -28,9 +31,9 @@
         "support": 3
       },
       "day": {
-        "precision": 0.75,
+        "precision": 1,
         "recall": 1,
-        "f1": 0.8571428571428571,
+        "f1": 1,
         "support": 3
       },
       "faculty": {
@@ -58,35 +61,40 @@
         "day": 0,
         "faculty": 0,
         "room": 0,
-        "subject": 0
+        "subject": 0,
+        "unknown": 0
       },
       "day": {
         "all": 0,
         "day": 3,
         "faculty": 0,
         "room": 0,
-        "subject": 0
+        "subject": 0,
+        "unknown": 0
       },
       "faculty": {
         "all": 0,
-        "day": 1,
+        "day": 0,
         "faculty": 2,
         "room": 0,
-        "subject": 0
+        "subject": 0,
+        "unknown": 1
       },
       "room": {
         "all": 0,
         "day": 0,
         "faculty": 0,
         "room": 3,
-        "subject": 0
+        "subject": 0,
+        "unknown": 0
       },
       "subject": {
         "all": 0,
         "day": 0,
         "faculty": 0,
         "room": 0,
-        "subject": 3
+        "subject": 3,
+        "unknown": 0
       }
     }
   },

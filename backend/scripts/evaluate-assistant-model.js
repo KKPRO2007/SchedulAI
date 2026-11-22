@@ -10,6 +10,7 @@ const report = evaluateTrainingData(examples);
 
 console.log(`Split: ${report.split.method} · seed ${report.split.seed}`);
 console.log(`Training: ${report.split.trainingExamples} · holdout: ${report.split.holdoutExamples}`);
+console.log(`Confidence threshold: ${report.confidenceThreshold.toFixed(3)} · coverage: ${(report.metrics.coverage * 100).toFixed(1)}% · selective accuracy: ${(report.metrics.selectiveAccuracy * 100).toFixed(1)}%`);
 console.log(`Accuracy: ${(report.metrics.accuracy * 100).toFixed(1)}% · macro F1: ${(report.metrics.macroF1 * 100).toFixed(1)}%`);
 console.log('\nPer-intent metrics');
 for (const [intent, metrics] of Object.entries(report.metrics.perIntent)) {
