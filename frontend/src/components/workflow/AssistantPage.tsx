@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { ArrowDown, ArrowUpRight, Bot, CalendarDays, Check, Clock3, LoaderCircle, RotateCcw, Send, ShieldCheck, Sparkles, UserRound } from 'lucide-react';
 import PageHeader from '../ui/PageHeader';
 import { api } from '../../lib/api';
@@ -66,14 +66,10 @@ export default function AssistantPage() {
     }
   }
 
-  function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    void ask(draft);
-  }
-
   function onComposerKey(event: KeyboardEvent<HTMLTextAreaElement>) {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
+      event.stopPropagation();
       void ask(draft);
     }
   }
@@ -169,7 +165,7 @@ export default function AssistantPage() {
                 ))}
               </div>
             )}
-            <form onSubmit={submit} className="flex items-end gap-2 rounded-2xl border border-white/[0.1] bg-slate-950/55 p-2 shadow-inner shadow-black/20 transition focus-within:border-sky-300/30 focus-within:ring-2 focus-within:ring-sky-400/[0.08]">
+            <div role="group" aria-label="Send a timetable question" className="flex items-end gap-2 rounded-2xl border border-white/[0.1] bg-slate-950/55 p-2 shadow-inner shadow-black/20 transition focus-within:border-sky-300/30 focus-within:ring-2 focus-within:ring-sky-400/[0.08]">
               <label className="sr-only" htmlFor="assistant-question">Ask about the published timetable</label>
               <textarea
                 id="assistant-question"
@@ -181,10 +177,10 @@ export default function AssistantPage() {
                 className="max-h-32 min-h-11 flex-1 resize-y bg-transparent px-3 py-3 text-sm text-white outline-none placeholder:text-slate-500"
                 disabled={pending}
               />
-              <button type="submit" disabled={!draft.trim() || pending} aria-label="Send question" className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-sky-400 to-indigo-500 text-white shadow-lg shadow-indigo-950/40 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-35">
+              <button type="button" onClick={() => void ask(draft)} disabled={!draft.trim() || pending} aria-label="Send question" className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-sky-400 to-indigo-500 text-white shadow-lg shadow-indigo-950/40 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-35">
                 {pending ? <LoaderCircle size={17} className="animate-spin" /> : <Send size={17} />}
               </button>
-            </form>
+            </div>
             <p className="mt-2.5 text-center text-[10px] text-[var(--text-muted)]">Enter to send · Shift + Enter for a new line · Answers use published timetable data</p>
           </div>
         </section>
