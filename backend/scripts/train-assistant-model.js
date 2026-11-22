@@ -1,41 +1,29 @@
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import { trainIntentModel } from '../src/ml/naiveBayes.js';
+import { evaluateTrainingData } from '../src/ml/training.js';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const dataPath = path.join(root, 'src/ml/assistant-training-data.json');
 const outputPath = path.join(root, 'src/ml/assistant-intent-model.json');
 const examples = JSON.parse(await readFile(dataPath, 'utf8'));
-
-function tokenize(text) {
-  return text.toLowerCase().match(/[a-z0-9]+/g) ?? [];
-}
-
-const labels = {};
-const vocabulary = new Set();
-for (const { text, intent } of examples) {
-  if (!text || !intent) throw new Error('Every training example needs text and intent.');
-  const words = tokenize(text);
-  if (words.length === 0) throw new Error(`Empty training example for ${intent}.`);
-  const model = labels[intent] ??= { documents: 0, tokenCount: 0, tokens: {} };
-  model.documents += 1;
-  for (const word of words) {
-    vocabulary.add(word);
-    model.tokens[word] = (model.tokens[word] ?? 0) + 1;
-    model.tokenCount += 1;
-  }
-}
+const evaluation = evaluateTrainingData(examples);
+const model = trainIntentModel(examples);
 
 const artifact = {
-  formatVersion: 1,
-  algorithm: 'multinomial-naive-bayes',
+  formatVersion: 2,
+  algorithm: model.algorithm,
   trainedAt: new Date().toISOString(),
   sampleCount: examples.length,
-  vocabulary: [...vocabulary].sort(),
-  labels,
+  intentCounts: evaluation.intentCounts,
+  evaluation: { ...evaluation.split, ...evaluation.metrics },
+  vocabulary: model.vocabulary,
+  labels: model.labels,
 };
 
 await mkdir(path.dirname(outputPath), { recursive: true });
 await writeFile(outputPath, `${JSON.stringify(artifact, null, 2)}\n`);
-console.log(`Trained ${artifact.algorithm}: ${artifact.sampleCount} examples, ${artifact.vocabulary.length} tokens, ${Object.keys(labels).length} intents.`);
+console.log(`Trained ${artifact.algorithm} using ${artifact.sampleCount} examples and ${artifact.vocabulary.length} tokens.`);
+console.log(`Held-out accuracy: ${(artifact.evaluation.accuracy * 100).toFixed(1)}% · macro F1: ${(artifact.evaluation.macroF1 * 100).toFixed(1)}% (${artifact.evaluation.holdoutExamples} questions).`);
 console.log(`Saved ${path.relative(root, outputPath)}`);
