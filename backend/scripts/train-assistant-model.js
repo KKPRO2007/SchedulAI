@@ -14,6 +14,7 @@ const model = trainIntentModel(examples);
 const artifact = {
   formatVersion: 2,
   algorithm: model.algorithm,
+  featureExtractor: model.featureExtractor,
   trainedAt: new Date().toISOString(),
   sampleCount: examples.length,
   intentCounts: evaluation.intentCounts,

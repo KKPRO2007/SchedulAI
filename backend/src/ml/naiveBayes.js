@@ -6,7 +6,19 @@ const STOP_WORDS = new Set([
 
 export function tokenize(text) {
   return (String(text).toLowerCase().match(/[a-z0-9]+/g) ?? [])
-    .filter((word) => !STOP_WORDS.has(word));
+    .filter((word) => !STOP_WORDS.has(word))
+    .map(normalizeWord);
+}
+
+function normalizeWord(word) {
+  if (word.length > 5 && word.endsWith('ies')) return `${word.slice(0, -3)}y`;
+  if (word.length > 5 && /(?:sses|ches|shes|xes|zes)$/.test(word)) return word.slice(0, -2);
+  if (word.length > 4 && word.endsWith('s') && !word.endsWith('ss')) return word.slice(0, -1);
+  return word;
+}
+
+export function extractFeatures(text) {
+  return tokenize(text);
 }
 
 export function trainIntentModel(examples) {
@@ -14,7 +26,7 @@ export function trainIntentModel(examples) {
   const vocabulary = new Set();
 
   for (const { text, intent } of examples) {
-    const words = tokenize(text);
+    const words = extractFeatures(text);
     const stats = labels[intent] ??= { documents: 0, tokenCount: 0, tokens: {} };
     stats.documents += 1;
 
@@ -27,6 +39,7 @@ export function trainIntentModel(examples) {
 
   return {
     algorithm: 'multinomial-naive-bayes',
+    featureExtractor: 'normalized-unigrams-v1',
     vocabulary: [...vocabulary].sort(),
     labels,
   };
@@ -34,7 +47,7 @@ export function trainIntentModel(examples) {
 
 /** Return the model's top intent and normalized posterior confidence. */
 export function predictIntent(model, text) {
-  const words = tokenize(text).filter((word) => model.vocabulary.includes(word));
+  const words = extractFeatures(text).filter((word) => model.vocabulary.includes(word));
   const entries = Object.entries(model.labels);
   const totalDocuments = entries.reduce((sum, [, label]) => sum + label.documents, 0);
   if (!words.length || !model.vocabulary.length || !totalDocuments) {
