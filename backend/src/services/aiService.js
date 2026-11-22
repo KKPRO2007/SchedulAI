@@ -12,6 +12,10 @@ export function generateAIResponse(question, sessions) {
     const selectedDay = days.find((day) => q.includes(day));
     const { intent } = classifyAssistantIntent(question);
 
+    if (intent === 'unknown') {
+        return 'I could not match that to a timetable question. Try asking about a day, subject, room, or faculty member.';
+    }
+
     let filteredSessions = sessions;
 
     if (intent === 'day' && selectedDay) {

@@ -10,5 +10,5 @@ export function classifyAssistantIntent(question) {
   const threshold = Number.isFinite(model.confidenceThreshold) ? model.confidenceThreshold : 0.4;
   return prediction.confidence >= threshold
     ? prediction
-    : { intent: 'all', confidence: prediction.confidence };
+    : { intent: 'unknown', confidence: prediction.confidence };
 }
