@@ -1,5 +1,6 @@
 import type { Faculty, Room, ScoreComponent, ScoreReport, Section } from './types';
 import { inWindow, SHIFT_HOURS, type Session, type Timetable } from './scheduler';
+import { validateTeachingPatternSessions } from './teachingPatterns';
 
 /**
  * Soft-constraint scoring (synopsis §7.1):
@@ -34,9 +35,12 @@ export function saveWeights(w: Weights) {
 
 export type HardCheck = { key: string; label: string; passed: boolean; violations: string[] };
 
-/** The seven hard constraints from §8.1, each with the offending entries. */
+/** The seven baseline hard constraints, plus configured pattern rules when present. */
 export function checkHardConstraints(tt: Timetable, ctx: { faculty: Faculty[]; rooms: Room[]; sections: Section[] }): HardCheck[] {
   const v = { faculty: [] as string[], section: [] as string[], room: [] as string[], capacity: [] as string[], labs: [] as string[], availability: [] as string[], hours: [] as string[] };
+  const patternViolations = tt.patternRules
+    ? validateTeachingPatternSessions(tt.sessions, tt.days, tt.patternRules)
+    : [];
   const seen = new Map<string, Session>();
   const roomBy = new Map(ctx.rooms.map((r) => [r.name, r]));
   const secBy = new Map(ctx.sections.map((s) => [s.name, s]));
@@ -74,7 +78,7 @@ export function checkHardConstraints(tt: Timetable, ctx: { faculty: Faculty[]; r
   for (const u of tt.unscheduled) if (u.hours > 0) v.hours.push(`${u.section} · ${u.subject}: ${u.hours}h missing (${u.reason})`);
 
   const mk = (key: string, label: string, list: string[]): HardCheck => ({ key, label, passed: list.length === 0, violations: [...new Set(list)].slice(0, 12) });
-  return [
+  const checks = [
     mk('faculty', 'No teacher in two places at once', v.faculty),
     mk('section', 'No section in two classes at once', v.section),
     mk('room', 'No room double-booked', v.room),
@@ -83,6 +87,10 @@ export function checkHardConstraints(tt: Timetable, ctx: { faculty: Faculty[]; r
     mk('availability', 'Availability and shift boundaries honoured', v.availability),
     mk('hours', 'Every required weekly hour placed', v.hours),
   ];
+  if (tt.patternRules) {
+    checks.push(mk('teachingPatterns', 'Configured teaching-pattern rules honoured', patternViolations));
+  }
+  return checks;
 }
 
 const clamp = (x: number) => Math.max(0, Math.min(1, x));

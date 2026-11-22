@@ -1,5 +1,8 @@
 import type { Faculty, Room, Section, Subject } from './types';
 import type { Assignment } from './import/detect';
+import { validateTeachingPatternRules, type TeachingPatternRules } from './teachingPatterns';
+
+export type { TeachingPatternRules } from './teachingPatterns';
 
 export const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 export const HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17];
@@ -60,6 +63,8 @@ export type Timetable = {
   };
   /** what the run was built from, for reproducibility (synopsis §7.2) */
   inputs?: { faculty: number; rooms: number; sections: number; subjects: number; restarts: number };
+  /** Optional policy snapshot; absent on older timetables and runs without configured rules. */
+  patternRules?: TeachingPatternRules;
 };
 
 export type ScheduleInput = {
@@ -76,6 +81,8 @@ export type ScheduleInput = {
   previous?: Session[];
   /** randomised restarts kept if they place more hours */
   restarts?: number;
+  /** Optional teaching-pattern policy; configured rules are validated and enforced during placement. */
+  patternRules?: TeachingPatternRules;
 };
 
 export const isLabSubject = (s: { name: string }) => /\blab\b|laboratory|practical|workshop|project/i.test(s.name);
@@ -103,12 +110,56 @@ function shuffle<T>(list: T[], rand: () => number) {
 const norm = (s: string) => s.trim().toLowerCase();
 export const inWindow = (window: string | undefined, start: number) => (window === 'morning' ? start < 13 : window === 'afternoon' ? start >= 13 : true);
 
+function longestRunLength(hours: Set<number>) {
+  const sorted = [...hours].sort((a, b) => a - b);
+  let longest = 0;
+  let current = 0;
+  let previous: number | undefined;
+  for (const hour of sorted) {
+    current = previous === hour - 1 ? current + 1 : 1;
+    longest = Math.max(longest, current);
+    previous = hour;
+  }
+  return longest;
+}
+
+function exceedsConsecutiveLimit(existing: Set<number> | undefined, span: number[], limit: number) {
+  const projected = new Set(existing);
+  span.forEach((hour) => projected.add(hour));
+  return longestRunLength(projected) > limit;
+}
+
+function subjectMeetingKey(sectionName: unknown, subjectCode: unknown, subjectName: unknown) {
+  const section = typeof sectionName === 'string' ? norm(sectionName) : '';
+  const code = typeof subjectCode === 'string' ? norm(subjectCode) : '';
+  const name = typeof subjectName === 'string' ? norm(subjectName) : '';
+  const subject = code ? `code:${code}` : name ? `name:${name}` : '';
+  return section && subject ? JSON.stringify([section, subject]) : undefined;
+}
+
+function satisfiesSubjectSpacing(existingDays: readonly number[], candidateDay: number, dayCount: number, minGap: number) {
+  const meetings = [...existingDays, candidateDay].sort((a, b) => a - b);
+  if (meetings.length < 2) return true;
+  for (let index = 0; index < meetings.length; index++) {
+    const current = meetings[index];
+    const next = meetings[(index + 1) % meetings.length];
+    const gap = index === meetings.length - 1
+      ? dayCount - current - 1 + next
+      : Math.max(0, next - current - 1);
+    if (gap < minGap) return false;
+  }
+  return true;
+}
+
 /**
  * Hard constraints are never broken: a section, teacher or room is used once per hour,
  * rooms fit the section, labs go to labs, shifts and availability are respected.
  * Search: most-constrained activities first, scored slot ordering, and randomised restarts.
  */
 export function generateTimetable(input: ScheduleInput): Timetable {
+  const ruleErrors = validateTeachingPatternRules(input.patternRules);
+  if (ruleErrors.length) throw new Error(ruleErrors.join('; '));
+
   const t0 = performance.now();
   const baseSeed = input.seed ?? Math.floor(Math.random() * 1e9);
   const restarts = Math.max(1, input.restarts ?? 4);
@@ -200,11 +251,36 @@ function solveOnce(input: ScheduleInput, seed: number): Timetable {
     }
   }
 
+  const patternRules = input.patternRules;
+  const facultyPatternRulesEnabled = patternRules?.facultyMaxDailyHours !== undefined
+    || patternRules?.facultyMaxConsecutiveHours !== undefined;
+  if (facultyPatternRulesEnabled) {
+    const facultyIdByEmail = new Map<string, number>();
+    for (const { faculty } of jobs) {
+      if (!faculty) continue;
+      const email = typeof faculty.email === 'string' ? norm(faculty.email) : '';
+      if (!email) {
+        throw new Error(`Invalid timetable input: faculty "${faculty.name || faculty.id}" (ID ${faculty.id}) assigned to a job with faculty pattern rules must have a nonblank email.`);
+      }
+      const existingId = facultyIdByEmail.get(email);
+      if (existingId !== undefined && existingId !== faculty.id) {
+        throw new Error(`Invalid timetable input: faculty email "${email}" is assigned to distinct faculty IDs ${existingId} and ${faculty.id} while faculty pattern rules are enabled.`);
+      }
+      facultyIdByEmail.set(email, faculty.id);
+    }
+  }
+
   const sectionLoad = new Map<number, number>();
   jobs.forEach((j) => sectionLoad.set(j.section.id, (sectionLoad.get(j.section.id) ?? 0) + (j.lab ? Math.max(1, Math.round(j.hours / 2)) * 2 : j.hours)));
 
   const sessions: Session[] = [];
   const sectionDayCount = new Map<string, number>();
+  const sectionPatternDayHours = new Map<string, number>();
+  const facultyDayHours = new Map<string, number>();
+  const sectionDaySlots = new Map<string, Set<number>>();
+  const facultyDaySlots = new Map<string, Set<number>>();
+  const subjectMeetingDays = new Map<string, number[]>();
+  const dayEntityKey = (id: string | number, day: string) => JSON.stringify([id, day]);
 
   for (const job of jobs) {
     const { section, subject, lab } = job;
@@ -213,6 +289,7 @@ function solveOnce(input: ScheduleInput, seed: number): Timetable {
       continue;
     }
     const f = job.faculty;
+    const facultyPatternIdentity = facultyPatternRulesEnabled ? norm(f.email) : '';
     const hours = SHIFT_HOURS[section.shift] ?? SHIFT_HOURS['Shift 1'];
     const block = lab ? 2 : 1;
     const needed = lab ? Math.max(1, Math.round(job.hours / 2)) : job.hours;
@@ -220,8 +297,52 @@ function solveOnce(input: ScheduleInput, seed: number): Timetable {
     const roomPool = rooms.filter((r) => (lab ? r.type === 'Laboratory' : r.type !== 'Laboratory') && r.capacity >= minCap);
     const fallbackRooms = lab ? [] : rooms.filter((r) => r.type !== 'Laboratory');
     const prev = previous.get(`${norm(section.name)}|${norm(subject.code)}`) ?? [];
+    const sectionPatternIdentity = typeof section.name === 'string' ? norm(section.name) : '';
+    const sectionPatternRulesEnabled = patternRules?.sectionMaxDailyHours !== undefined
+      || patternRules?.sectionMaxConsecutiveHours !== undefined
+      || patternRules?.minSubjectGapDays !== undefined;
+    const spacingKey = subjectMeetingKey(sectionPatternIdentity, subject.code, subject.name);
     let placed = 0;
     const usedDays = new Set<string>();
+    const patternRejections = new Map<string, number>();
+
+    const patternBlock = (day: string, span: number[]) => {
+      if (sectionPatternRulesEnabled && !sectionPatternIdentity) {
+        return 'section identity (required for section pattern rules)';
+      }
+
+      const sectionDayKey = dayEntityKey(sectionPatternIdentity, day);
+      if (patternRules?.sectionMaxDailyHours !== undefined
+        && (sectionPatternDayHours.get(sectionDayKey) ?? 0) + span.length > patternRules.sectionMaxDailyHours) {
+        return 'sectionMaxDailyHours';
+      }
+
+      const facultyDayKey = dayEntityKey(facultyPatternIdentity, day);
+      if (patternRules?.facultyMaxDailyHours !== undefined
+        && (facultyDayHours.get(facultyDayKey) ?? 0) + span.length > patternRules.facultyMaxDailyHours) {
+        return 'facultyMaxDailyHours';
+      }
+
+      if (patternRules?.sectionMaxConsecutiveHours !== undefined
+        && exceedsConsecutiveLimit(sectionDaySlots.get(sectionDayKey), span, patternRules.sectionMaxConsecutiveHours)) {
+        return 'sectionMaxConsecutiveHours';
+      }
+
+      if (patternRules?.facultyMaxConsecutiveHours !== undefined
+        && exceedsConsecutiveLimit(facultyDaySlots.get(facultyDayKey), span, patternRules.facultyMaxConsecutiveHours)) {
+        return 'facultyMaxConsecutiveHours';
+      }
+
+      if (patternRules?.minSubjectGapDays !== undefined) {
+        const candidateDay = days.indexOf(day);
+        if (!spacingKey || candidateDay < 0
+          || !satisfiesSubjectSpacing(subjectMeetingDays.get(spacingKey) ?? [], candidateDay, days.length, patternRules.minSubjectGapDays)) {
+          return 'minSubjectGapDays';
+        }
+      }
+
+      return null;
+    };
 
     const slotScore = (day: string, start: number) => {
       let s = rand() * 0.4;
@@ -249,6 +370,11 @@ function solveOnce(input: ScheduleInput, seed: number): Timetable {
           if (!span.every((h) => isFree('sec', section.id, day, h) && isFree('fac', f.id, day, h))) continue;
           const room = (roomPool.length ? roomPool : fallbackRooms).find((r) => span.every((h) => isFree('room', r.id, day, h)));
           if (!room) continue;
+          const blockedBy = patternBlock(day, span);
+          if (blockedBy) {
+            patternRejections.set(blockedBy, (patternRejections.get(blockedBy) ?? 0) + 1);
+            continue;
+          }
           span.forEach((h) => {
             take('sec', section.id, day, h);
             take('fac', f.id, day, h);
@@ -271,6 +397,27 @@ function solveOnce(input: ScheduleInput, seed: number): Timetable {
             color: colorOf.get(subject.code) ?? 0,
           });
           sectionDayCount.set(`${section.name}|${day}`, (sectionDayCount.get(`${section.name}|${day}`) ?? 0) + block);
+          const sectionDayKey = dayEntityKey(sectionPatternIdentity, day);
+          if (patternRules?.sectionMaxDailyHours !== undefined) {
+            sectionPatternDayHours.set(sectionDayKey, (sectionPatternDayHours.get(sectionDayKey) ?? 0) + block);
+          }
+          if (patternRules?.sectionMaxConsecutiveHours !== undefined) {
+            const occupied = sectionDaySlots.get(sectionDayKey) ?? new Set<number>();
+            span.forEach((h) => occupied.add(h));
+            sectionDaySlots.set(sectionDayKey, occupied);
+          }
+          const facultyDayKey = dayEntityKey(facultyPatternIdentity, day);
+          if (patternRules?.facultyMaxDailyHours !== undefined) {
+            facultyDayHours.set(facultyDayKey, (facultyDayHours.get(facultyDayKey) ?? 0) + block);
+          }
+          if (patternRules?.facultyMaxConsecutiveHours !== undefined) {
+            const occupied = facultyDaySlots.get(facultyDayKey) ?? new Set<number>();
+            span.forEach((h) => occupied.add(h));
+            facultyDaySlots.set(facultyDayKey, occupied);
+          }
+          if (patternRules?.minSubjectGapDays !== undefined && spacingKey) {
+            subjectMeetingDays.set(spacingKey, [...(subjectMeetingDays.get(spacingKey) ?? []), days.indexOf(day)]);
+          }
           usedDays.add(day);
           placed++;
           break;
@@ -278,14 +425,37 @@ function solveOnce(input: ScheduleInput, seed: number): Timetable {
       }
     }
     if (placed < needed) {
+      // Rebuild diagnostic evidence from the final occupancy state. Earlier
+      // pattern rejections may have become resource-unavailable after placement.
+      const diagnosticPatternRejections = new Map<string, number>();
+      if (patternRules) {
+        for (const day of days) {
+          const starts = hours.filter((h) => Array.from({ length: block }, (_, k) => h + k).every((x) => hours.includes(x)));
+          for (const start of starts) {
+            const span = Array.from({ length: block }, (_, k) => start + k);
+            if (!span.every((h) => isFree('sec', section.id, day, h) && isFree('fac', f.id, day, h))) continue;
+            const availableRoom = (roomPool.length ? roomPool : fallbackRooms)
+              .find((r) => span.every((h) => isFree('room', r.id, day, h)));
+            if (!availableRoom) continue;
+            const blockedBy = patternBlock(day, span);
+            if (blockedBy) {
+              diagnosticPatternRejections.set(blockedBy, (diagnosticPatternRejections.get(blockedBy) ?? 0) + 1);
+            }
+          }
+        }
+      }
+
       const load = sectionLoad.get(section.id) ?? 0;
       const capacity = days.length * hours.length;
+      const blockingPatternRule = [...diagnosticPatternRejections.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
       const reason =
         roomPool.length === 0 && lab
           ? 'No laboratory large enough'
           : load > capacity
             ? `Section needs ${load}h a week but ${section.shift} only has ${capacity}h`
-            : 'No common free slot for section, faculty and room';
+            : blockingPatternRule
+              ? `Teaching-pattern rule ${blockingPatternRule} blocked otherwise resource-feasible candidates; other constraints may also limit the remaining hours`
+              : 'No common free slot for section, faculty and room';
       unscheduled.push({ section: section.name, subject: subject.name, hours: (needed - placed) * block, reason });
     }
   }
@@ -310,6 +480,7 @@ function solveOnce(input: ScheduleInput, seed: number): Timetable {
       roomUtilization: scheduledHours / totalRoomSlots,
       ms: 0,
     },
+    ...(input.patternRules ? { patternRules: { ...input.patternRules } } : {}),
   };
 }
 
