@@ -1,5 +1,6 @@
 import {
   BookOpen,
+  Bot,
   CalendarDays,
   CalendarHeart,
   DoorOpen,
@@ -20,6 +21,7 @@ export type PageId =
   | 'overview'
   | 'schedule'
   | 'my-timetable'
+  | 'assistant'
   | 'import'
   | 'studio'
   | 'versions'
@@ -41,6 +43,7 @@ export const NAV: NavItem[] = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard, group: 'Workspace', roles: STAFF },
   { id: 'schedule', label: 'My Schedule', icon: CalendarHeart, group: 'Workspace', roles: ['faculty'] },
   { id: 'my-timetable', label: 'My Timetable', icon: CalendarHeart, group: 'Workspace', roles: ['student'] },
+  { id: 'assistant', label: 'AI Assistant', icon: Bot, badge: 'NEW', group: 'Workspace', roles: ['admin', 'coordinator', 'faculty'] },
   { id: 'import', label: 'Data Import', icon: UploadCloud, badge: 'AI', group: 'Workspace', roles: STAFF },
   { id: 'studio', label: 'Generate', icon: Sparkles, group: 'Scheduling', roles: STAFF },
   { id: 'versions', label: 'Versions & Approval', icon: History, group: 'Scheduling', roles: STAFF },
@@ -63,6 +66,7 @@ export const PAGE_SUBTITLE: Record<PageId, string> = {
   overview: 'Data quality, workflow status and today at a glance',
   schedule: 'Your classes, preferences and requests',
   'my-timetable': 'Your section’s published timetable',
+  assistant: 'Ask natural-language questions about the published timetable',
   import: 'Excel / CSV / ODS / JSON with column mapping and preview',
   studio: 'Generate, score and compare candidate timetables',
   versions: 'Draft → Submitted → Approved → Published',
