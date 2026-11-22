@@ -14,6 +14,7 @@ import { Toaster } from './components/ui/toast';
 const Overview = lazy(() => import('./components/dashboard/Overview'));
 const MySchedule = lazy(() => import('./components/dashboard/MySchedule'));
 const StudentTimetable = lazy(() => import('./components/dashboard/StudentTimetable'));
+const AssistantPage = lazy(() => import('./components/workflow/AssistantPage'));
 const TimetablePage = lazy(() => import('./components/dashboard/TimetablePage'));
 const StudioPage = lazy(() => import('./components/workflow/StudioPage'));
 const VersionsPage = lazy(() => import('./components/workflow/VersionsPage'));
@@ -49,6 +50,7 @@ function Workspace({ page, role }: { page: PageId; role: Role }) {
               {page === 'overview' && <Overview />}
               {page === 'schedule' && <MySchedule />}
               {page === 'my-timetable' && <StudentTimetable />}
+              {page === 'assistant' && <AssistantPage />}
               {page === 'import' && <ImportPage />}
               {page === 'studio' && <StudioPage />}
               {page === 'versions' && <VersionsPage />}
