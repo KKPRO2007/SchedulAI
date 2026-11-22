@@ -22,4 +22,6 @@ npm --prefix backend run evaluate:assistant
 
 The report includes accuracy, per-intent precision/recall/F1, and a confusion matrix. Training rejects missing intents, duplicate questions, conflicting labels, and examples with invalid intents. Each intent must have at least two examples so the holdout split keeps examples in both the training and evaluation sets.
 
+Training calibrates an abstention threshold from the same deterministic holdout. Low-confidence requests are routed to a short clarification response rather than being treated as a request for the entire timetable. The trainer validates the generated artifact and blocks promotion when holdout accuracy or macro F1 is below 70%; the runtime validates model format, feature extractor, class labels, vocabulary, and token counts before loading it.
+
 The training corpus is a small starter set for intent routing, not a foundation model or a general-purpose language model. Its holdout metrics are directional because the corpus is small and hand-written. Expand it with representative, reviewed timetable questions before relying on it for broad phrasing.

@@ -2,7 +2,7 @@
   "formatVersion": 2,
   "algorithm": "multinomial-naive-bayes",
   "featureExtractor": "normalized-unigrams-v1",
-  "trainedAt": "2026-11-22T09:15:20.483Z",
+  "trainedAt": "2026-11-22T09:19:55.483Z",
   "sampleCount": 85,
   "intentCounts": {
     "all": 17,

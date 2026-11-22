@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { trainIntentModel } from '../src/ml/naiveBayes.js';
 import { evaluateTrainingData } from '../src/ml/training.js';
+import { validateAssistantModel, validateModelQuality } from '../src/ml/modelArtifact.js';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const dataPath = path.join(root, 'src/ml/assistant-training-data.json');
@@ -24,6 +25,8 @@ const artifact = {
   labels: model.labels,
 };
 
+validateModelQuality(artifact.evaluation);
+validateAssistantModel(artifact);
 await mkdir(path.dirname(outputPath), { recursive: true });
 await writeFile(outputPath, `${JSON.stringify(artifact, null, 2)}\n`);
 console.log(`Trained ${artifact.algorithm} using ${artifact.sampleCount} examples and ${artifact.vocabulary.length} tokens.`);

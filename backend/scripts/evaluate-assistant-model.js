@@ -7,6 +7,7 @@ const root = fileURLToPath(new URL('../', import.meta.url));
 const dataPath = path.join(root, 'src/ml/assistant-training-data.json');
 const examples = JSON.parse(await readFile(dataPath, 'utf8'));
 const report = evaluateTrainingData(examples);
+const columns = [...Object.keys(report.metrics.confusion), 'unknown'];
 
 console.log(`Split: ${report.split.method} · seed ${report.split.seed}`);
 console.log(`Training: ${report.split.trainingExamples} · holdout: ${report.split.holdoutExamples}`);
@@ -18,7 +19,7 @@ for (const [intent, metrics] of Object.entries(report.metrics.perIntent)) {
 }
 console.log('\nConfusion matrix (rows = actual, columns = predicted)');
 const intents = Object.keys(report.metrics.confusion);
-console.log(`actual / ${intents.join(' / ')}`);
-for (const intent of intents) {
-  console.log(`${intent.padEnd(12)} ${intents.map((predicted) => String(report.metrics.confusion[intent][predicted]).padStart(4)).join(' ')}`);
+console.log(`actual / ${columns.join(' / ')}`);
+for (const intent of Object.keys(report.metrics.confusion)) {
+  console.log(`${intent.padEnd(12)} ${columns.map((predicted) => String(report.metrics.confusion[intent][predicted]).padStart(4)).join(' ')}`);
 }
