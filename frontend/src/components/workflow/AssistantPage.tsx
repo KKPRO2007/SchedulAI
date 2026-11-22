@@ -5,7 +5,7 @@ import { api } from '../../lib/api';
 import { useSession } from '../../lib/auth';
 
 type Message = { id: number; role: 'assistant' | 'user'; text: string; time: string };
-type AskResponse = { answer: string };
+type AskResponse = { answer?: unknown };
 
 const PROMPTS = [
   { icon: CalendarDays, title: 'My Monday', text: 'Show me my classes on Monday', tint: 'text-sky-300' },
@@ -46,19 +46,19 @@ export default function AssistantPage() {
     setPending(true);
 
     try {
-      const result = await api.post<AskResponse>('/assistant/ask', { question });
+      const result = await api.post<AskResponse | null>('/assistant/ask', { question });
+      const answer = typeof result?.answer === 'string' ? result.answer.trim() : '';
       setMessages((current) => [...current, {
         id: nextId.current++,
         role: 'assistant',
-        text: result.answer || 'I could not find a timetable answer for that question.',
+        text: answer || 'The AI API is not linked or is currently out of service. Please try again later.',
         time: clockTime(),
       }]);
-    } catch (error) {
-      const detail = error instanceof Error ? error.message : 'The request could not be completed.';
+    } catch {
       setMessages((current) => [...current, {
         id: nextId.current++,
         role: 'assistant',
-        text: `${detail} Make sure the live API is available and a timetable has been published.`,
+        text: 'The AI API is not linked or is currently out of service. Please try again later.',
         time: clockTime(),
       }]);
     } finally {
@@ -119,7 +119,7 @@ export default function AssistantPage() {
               </div>
               <div>
                 <p className="font-semibold tracking-tight text-[var(--text-primary)]">SchedulAI Assistant</p>
-                <p className="mt-0.5 flex items-center gap-1.5 text-xs text-[var(--text-muted)]"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Timetable data connected</p>
+                <p className="mt-0.5 flex items-center gap-1.5 text-xs text-[var(--text-muted)]"><span className="h-1.5 w-1.5 rounded-full bg-sky-300" /> Ask about the published timetable</p>
               </div>
             </div>
             <span className="rounded-full border border-indigo-300/20 bg-indigo-300/[0.08] px-2.5 py-1 text-[10px] font-semibold tracking-[0.14em] text-indigo-200">BETA</span>
