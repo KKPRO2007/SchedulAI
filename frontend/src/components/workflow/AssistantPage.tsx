@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import {
-  ArrowUp, Bot, CalendarDays, Check, Clock3, Copy, Database, DoorOpen, Gauge, LoaderCircle, RotateCcw,
+  ArrowUp, Bot, CalendarDays, Check, Clock3, Copy, DoorOpen, Gauge, LoaderCircle, RotateCcw,
   ShieldCheck, Sparkles, UserRound, Zap, type LucideIcon,
 } from 'lucide-react';
 import PageHeader from '../ui/PageHeader';
@@ -8,14 +8,9 @@ import AssistantMarkdown from './AssistantMarkdown';
 import { api } from '../../lib/api';
 import { useSession } from '../../lib/auth';
 
-type Message = { id: number; role: 'assistant' | 'user'; text: string; time: string; provider?: string; intent?: string };
-type AskResponse = { answer?: unknown; provider?: unknown; intent?: unknown };
+type Message = { id: number; role: 'assistant' | 'user'; text: string; time: string; intent?: string };
+type AskResponse = { answer?: unknown; intent?: unknown };
 
-const PROVIDERS: Record<string, { label: string; icon: LucideIcon; tone: string }> = {
-  groq: { label: 'Groq', icon: Zap, tone: 'border-orange-300/20 bg-orange-300/[0.08] text-orange-200' },
-  gemini: { label: 'Gemini', icon: Sparkles, tone: 'border-sky-300/20 bg-sky-300/[0.08] text-sky-200' },
-  'built-in': { label: 'Built-in lookup', icon: Database, tone: 'border-white/10 bg-white/[0.05] text-slate-300' },
-};
 const HISTORY_TURNS = 6;
 const UNAVAILABLE = 'I couldn’t reach the timetable service just now. Check your connection and try again in a moment.';
 const THINKING = ['Reading the published timetable…', 'Matching days, rooms and people…', 'Writing your answer…'];
@@ -55,17 +50,6 @@ const initialMessage: Message = {
 
 function clockTime() {
   return new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' }).format(new Date());
-}
-
-function ProviderBadge({ provider }: { provider?: string }) {
-  const meta = provider ? PROVIDERS[provider] : undefined;
-  if (!meta) return null;
-  const Icon = meta.icon;
-  return (
-    <span className={`inline-flex items-center gap-1 rounded-full border px-1.5 py-px text-[9px] font-medium tracking-wide ${meta.tone}`} title="Which engine wrote this answer">
-      <Icon size={9} /> {meta.label}
-    </span>
-  );
 }
 
 function Thinking() {
@@ -140,7 +124,6 @@ export default function AssistantPage() {
         role: 'assistant',
         text: answer || UNAVAILABLE,
         time: clockTime(),
-        provider: answer && typeof result?.provider === 'string' ? result.provider : undefined,
         intent: answer && typeof result?.intent === 'string' ? result.intent : undefined,
       }]);
     } catch {
@@ -222,7 +205,6 @@ export default function AssistantPage() {
                   </div>
                   <div className={`mt-1.5 flex items-center gap-2 text-[10px] text-[var(--text-muted)] ${message.role === 'user' ? 'justify-end' : ''}`}>
                     <span>{message.role === 'assistant' ? 'SchedulAI' : 'You'} · {message.time}</span>
-                    <ProviderBadge provider={message.provider} />
                     {message.role === 'assistant' && message.id !== initialMessage.id && (
                       <button type="button" onClick={() => void copyMessage(message)} className="inline-flex items-center gap-1 opacity-0 transition hover:text-white group-hover:opacity-100 focus:opacity-100" aria-label="Copy assistant response">
                         {copied === message.id ? <Check size={11} /> : <Copy size={11} />}
@@ -287,12 +269,7 @@ export default function AssistantPage() {
 
           <section className="overflow-hidden rounded-3xl border border-sky-300/[0.14] bg-gradient-to-br from-sky-400/[0.08] via-indigo-500/[0.06] to-violet-500/[0.09] p-5">
             <div className="flex items-center gap-2 text-sky-100"><ShieldCheck size={16} /><h2 className="text-sm font-semibold">Grounded in your timetable</h2></div>
-            <p className="mt-2 text-xs leading-5 text-[var(--text-secondary)]">A local ML model routes each question, the server picks only the timetable rows your role may see, and the AI writes the answer from those rows alone.</p>
-            <div className="mt-4 grid grid-cols-3 gap-2 border-t border-white/[0.08] pt-3 text-center text-[10px] text-[var(--text-muted)]">
-              <span className="rounded-xl bg-white/[0.04] px-2 py-1.5"><Zap size={12} className="mx-auto mb-1 text-orange-200" />Groq</span>
-              <span className="rounded-xl bg-white/[0.04] px-2 py-1.5"><Sparkles size={12} className="mx-auto mb-1 text-sky-200" />Gemini</span>
-              <span className="rounded-xl bg-white/[0.04] px-2 py-1.5"><Database size={12} className="mx-auto mb-1 text-slate-300" />Lookup</span>
-            </div>
+            <p className="mt-2 text-xs leading-5 text-[var(--text-secondary)]">Each question is matched to the timetable rows your role may see, and the answer is written from those rows alone.</p>
           </section>
 
           <p className="px-2 text-[10px] leading-4 text-[var(--text-muted)]">AI can make mistakes. Check the published timetable before acting on anything important.</p>

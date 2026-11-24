@@ -31,7 +31,7 @@ The demo uses a synthetic campus (5 departments, 22 sections across 4 shifts, 45
 - **Audit log:** imports, generation runs, approvals, publications, requests and exports are recorded with the actor and time.
 - **Downloads:** PDF (print), Excel (per section or per teacher), CSV and `.ics` calendar files.
 - **Security:** JWT authentication with role checks on every API call. The server rejects unauthorised requests even if the UI hides a button.
-- **Timetable assistant:** ask in plain language ("when am I free on Wednesday?", "who teaches DBMS?", "which labs are free Friday at 2pm?", "who has the highest load?"), including follow-ups such as "what about Thursday?". A local Naive Bayes model routes the question, the server retrieves only the timetable rows the user may see (students: their section; faculty: their sessions; admins and coordinators: the whole campus), and Groq (GPT-OSS 120B) writes the answer, with Gemini 2.5 Flash as the fallback. In the browser-only demo mode (no database) the assistant still works through a database-free API route. Without an LLM key it answers from the same data with built-in templates.
+- **Timetable assistant:** ask in plain language ("when am I free on Wednesday?", "who teaches DBMS?", "which labs are free Friday at 2pm?", "who has the highest load?"), including follow-ups such as "what about Thursday?". A local Naive Bayes model routes the question, the server retrieves only the timetable rows the user may see (students: their section; faculty: their sessions; admins and coordinators: the whole campus), and a hosted language model writes the answer (with an automatic fallback provider). In the browser-only demo mode (no database) the assistant still works through a database-free API route. Without an LLM key it answers from the same data with built-in templates.
 - **Works offline:** if the API or database is unreachable, the demo runs entirely in the browser with the same roles and workflow.
 
 ## Architecture
@@ -41,7 +41,7 @@ The demo uses a synthetic campus (5 departments, 22 sections across 4 shifts, 45
 | Presentation | React, TypeScript, Tailwind CSS | Role workspaces, import wizard, timetable grids |
 | Application / API | Node.js, Express, JWT | Auth & roles, validation, bulk import, versions, requests, audit |
 | Intelligence | Constraint engine + scoring (TypeScript) | Hard/soft validation, candidate generation, substitution ranking |
-| Assistant | Naive Bayes router + Groq / Gemini (Node.js) | Intent routing, role-scoped retrieval, grounded answers ([details](backend/src/ml/README.md)) |
+| Assistant | Naive Bayes router + hosted LLM (Node.js) | Intent routing, role-scoped retrieval, grounded answers ([details](backend/src/ml/README.md)) |
 | Data | PostgreSQL (Neon) | Master data, versioned timetables (JSONB), requests, audit log |
 
 ```

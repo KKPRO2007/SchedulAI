@@ -20,7 +20,7 @@ async function askDemoAssistant(input: {
   sessions: Timetable['sessions'];
   rooms: Row[];
   user: User;
-}): Promise<{ answer: string; provider: string; intent?: string }> {
+}): Promise<{ answer: string; intent?: string }> {
   const sessions = input.sessions.map((s) => ({
     day: s.day, start: s.start, duration: s.duration, section: s.section, shift: s.shift, department: s.department,
     subjectCode: s.subjectCode, subjectName: s.subjectName, faculty: s.faculty, facultyEmail: s.facultyEmail, room: s.room, isLab: s.isLab,
@@ -32,11 +32,11 @@ async function askDemoAssistant(input: {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ question: input.question, history: input.history, sessions, rooms, user: input.user }),
     });
-    const data = (await res.json().catch(() => ({}))) as { answer?: string; provider?: string; intent?: string; error?: string };
-    if (!res.ok) return { answer: data.error ?? ASSISTANT_OFFLINE, provider: 'none' };
-    return { answer: data.answer ?? ASSISTANT_OFFLINE, provider: data.provider ?? 'none', intent: data.intent };
+    const data = (await res.json().catch(() => ({}))) as { answer?: string; intent?: string; error?: string };
+    if (!res.ok) return { answer: data.error ?? ASSISTANT_OFFLINE };
+    return { answer: data.answer ?? ASSISTANT_OFFLINE, intent: data.intent };
   } catch {
-    return { answer: ASSISTANT_OFFLINE, provider: 'none' };
+    return { answer: ASSISTANT_OFFLINE };
   }
 }
 
@@ -212,7 +212,7 @@ export async function localRequest(method: string, path: string, body: unknown, 
   /* ---------------- assistant ---------------- */
   if (resource === 'assistant' && id === 'ask' && method === 'POST') {
     const published = [...store.versions].reverse().find((x) => x.status === 'published');
-    if (!published) return { answer: 'No published timetable found.', provider: 'none' };
+    if (!published) return { answer: 'No published timetable found.' };
     return askDemoAssistant({
       question: String(b.question ?? ''),
       history: Array.isArray(b.history) ? b.history : [],
