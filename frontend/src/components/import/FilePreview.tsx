@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react';
-import { ArrowRight, CheckCircle2, Clock, Columns3, Download, Layers, Plus, Rows3, Sparkles, Trash2 } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Clock, Columns3, Download, Layers, LoaderCircle, Plus, Rows3, Sparkles, Trash2, Undo2, Wand2 } from 'lucide-react';
 import Modal from '../ui/Modal';
 import { ENTITIES } from '../../lib/entities';
 import type { EntityKey } from '../../lib/types';
-import { reanalyze, type Override, type ParsedFile } from '../../lib/import/detect';
+import { applyAiMapping, reanalyze, unmappedColumns, type Override, type ParsedFile } from '../../lib/import/detect';
+import { requestAiMapping } from '../../lib/import/aiMapping';
 import { ConfidenceRing, EntityDot, FileBadge } from './visuals';
 import { ENTITY_COLOR, ENTITY_LABEL, fmtSize } from '../../lib/import/entityStyle';
 import { demoUrl } from '../../lib/import/demoFiles';
@@ -26,6 +27,7 @@ export default function FilePreview({
   onChange: (f: ParsedFile) => void;
 }) {
   const [sheetIndex, setSheetIndex] = useState(0);
+  const [ai, setAi] = useState<{ status: 'idle' | 'loading' | 'done' | 'error'; message?: string; before?: ParsedFile; sheet?: number; tried?: number[] }>({ status: 'idle' });
   const sheet = file?.sheets[Math.min(sheetIndex, (file?.sheets.length ?? 1) - 1)];
 
   // column → list of (entity, field label) it feeds
@@ -42,8 +44,44 @@ export default function FilePreview({
 
   if (!file || !sheet) return null;
 
-  const setOverride = (o: Override) => onChange(reanalyze(file, Math.min(sheetIndex, file.sheets.length - 1), o));
+  const activeSheet = Math.min(sheetIndex, file.sheets.length - 1);
+  const setOverride = (o: Override) => {
+    setAi({ status: 'idle' });
+    onChange(reanalyze(file, activeSheet, o));
+  };
   const mappedCols = colInfo.size;
+  const unmapped = sheet.override === 'ignore' ? [] : unmappedColumns(sheet);
+  const aiCols = new Set(sheet.aiColumns ?? []);
+  const aiForThisSheet = ai.sheet === activeSheet;
+  // Columns the AI already looked at and left alone are not offered again.
+  const askable = unmapped.filter((c) => !(aiForThisSheet && ai.status === 'done' && ai.tried?.includes(c)));
+
+  // Headers in other words, languages or abbreviations: let the AI suggest fields for them.
+  async function mapWithAi() {
+    if (!file || !sheet) return;
+    setAi({ status: 'loading', sheet: activeSheet });
+    try {
+      const result = await requestAiMapping(file.name, sheet);
+      const next = applyAiMapping(file, activeSheet, result);
+      const added = (next.sheets[activeSheet].aiColumns?.length ?? 0) - (sheet.aiColumns?.length ?? 0);
+      setAi({
+        status: 'done',
+        sheet: activeSheet,
+        before: added > 0 ? file : undefined,
+        tried: unmapped,
+        message: added > 0
+          ? `AI mapped ${added} of ${unmapped.length} column${unmapped.length === 1 ? '' : 's'}. Check the AI-marked columns below before importing.`
+          : 'AI found no confident match for the remaining columns, so they stay ignored.',
+      });
+      if (added > 0) onChange(next);
+    } catch (error) {
+      setAi({ status: 'error', sheet: activeSheet, message: error instanceof Error ? error.message : 'AI mapping failed.' });
+    }
+  }
+  function undoAi() {
+    if (ai.before) onChange(ai.before);
+    setAi({ status: 'idle' });
+  }
 
   return (
     <Modal
@@ -111,12 +149,41 @@ export default function FilePreview({
         </label>
       </div>
 
+      {/* AI help for headers the matcher could not read */}
+      {(unmapped.length > 0 || (aiForThisSheet && ai.status !== 'idle')) && (
+        <div className="flex flex-col gap-3 border-b border-white/10 bg-gradient-to-r from-violet-500/[0.07] via-indigo-500/[0.05] to-transparent px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="flex items-start gap-2 text-xs leading-5 text-[var(--text-secondary)]" aria-live="polite">
+            <Wand2 size={14} className="mt-0.5 shrink-0 text-violet-300" />
+            {aiForThisSheet && ai.status === 'loading' && <span>Reading your headers and sample values…</span>}
+            {aiForThisSheet && (ai.status === 'done' || ai.status === 'error') && <span className={ai.status === 'error' ? 'text-amber-200' : ''}>{ai.message}</span>}
+            {(!aiForThisSheet || ai.status === 'idle') && (
+              <span>
+                {unmapped.length} column{unmapped.length === 1 ? '' : 's'} not recognised
+                {unmapped.length <= 4 && <> ({unmapped.map((c) => sheet.headers[c] || `Column ${c + 1}`).join(', ')})</>}.
+                AI can read other words, languages and short forms.
+              </span>
+            )}
+          </p>
+          <div className="flex shrink-0 gap-2">
+            {aiForThisSheet && ai.status === 'done' && ai.before && (
+              <button type="button" onClick={undoAi} className="btn btn-secondary py-1.5 text-xs"><Undo2 size={13} /> Undo</button>
+            )}
+            {askable.length > 0 && (
+              <button type="button" onClick={() => void mapWithAi()} disabled={ai.status === 'loading'} className="btn btn-primary py-1.5 text-xs">
+                {ai.status === 'loading' && aiForThisSheet ? <LoaderCircle size={13} className="animate-spin" /> : <Sparkles size={13} />}
+                {ai.status === 'loading' && aiForThisSheet ? 'Mapping…' : `Map ${askable.length} with AI`}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Column mapping strip */}
       <div className="flex gap-2 overflow-x-auto border-b border-white/10 px-5 py-3">
         {sheet.headers.map((h, col) => {
           const info = colInfo.get(col);
           return (
-            <div key={col} className={`flex shrink-0 items-center gap-2 rounded-md border px-3 py-2 text-xs ${info ? 'border-white/10 bg-white/[0.03]' : 'border-dashed border-white/10 opacity-60'}`}>
+            <div key={col} className={`flex shrink-0 items-center gap-2 rounded-md border px-3 py-2 text-xs ${!info ? 'border-dashed border-white/10 opacity-60' : aiCols.has(col) ? 'border-violet-300/40 bg-violet-400/[0.08]' : 'border-white/10 bg-white/[0.03]'}`}>
               <code className="font-mono text-sky-300">{h || `Column ${col + 1}`}</code>
               <ArrowRight size={12} className="text-[var(--text-muted)]" />
               {info ? (
@@ -124,7 +191,7 @@ export default function FilePreview({
                   <span key={x.entity} className="flex items-center gap-1.5 text-[var(--text-primary)]">
                     <EntityDot entity={x.entity} /> {x.label}
                   </span>
-                ))
+                )).concat(aiCols.has(col) ? [<span key="ai" className="rounded bg-violet-400/20 px-1 text-[9px] font-semibold tracking-wide text-violet-200" title="Suggested by AI">AI</span>] : [])
               ) : (
                 <span className="text-[var(--text-muted)]">ignored</span>
               )}

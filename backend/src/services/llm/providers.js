@@ -38,7 +38,7 @@ async function postJson(provider, url, headers, body, timeoutMs) {
 }
 
 /** messages: [{ role: 'user' | 'assistant', content: string }] */
-async function callGroq({ system, messages, temperature, maxTokens }) {
+async function callGroq({ system, messages, temperature, maxTokens, json }) {
   const model = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
   const body = {
     model,
@@ -46,6 +46,7 @@ async function callGroq({ system, messages, temperature, maxTokens }) {
     max_tokens: maxTokens,
     messages: [{ role: 'system', content: system }, ...messages],
   };
+  if (json) body.response_format = { type: 'json_object' };
   // gpt-oss models reason before answering; keep it short for quick lookups and leave token room for the answer.
   if (/gpt-oss/.test(model)) {
     body.reasoning_effort = 'low';
@@ -62,9 +63,10 @@ async function callGroq({ system, messages, temperature, maxTokens }) {
   return data?.choices?.[0]?.message?.content ?? '';
 }
 
-async function callGemini({ system, messages, temperature, maxTokens }) {
+async function callGemini({ system, messages, temperature, maxTokens, json }) {
   const model = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
   const generationConfig = { temperature, maxOutputTokens: maxTokens };
+  if (json) generationConfig.responseMimeType = 'application/json';
   // 2.5 models spend output tokens on "thinking" by default; lookups don't need it.
   if (/^gemini-2\.5-flash/.test(model)) generationConfig.thinkingConfig = { thinkingBudget: 0 };
 
@@ -105,7 +107,8 @@ export function estimateTokens(system, messages) {
  * Ask the first provider that answers. Returns { text, provider } or null when no
  * provider is configured or all of them failed (the caller then uses its own fallback).
  */
-export async function completeChat({ system, messages, temperature = 0.2, maxTokens = 700 }) {
+/** json: ask the provider for a single JSON object instead of prose. */
+export async function completeChat({ system, messages, temperature = 0.2, maxTokens = 700, json = false }) {
   const errors = [];
   const promptTokens = estimateTokens(system, messages);
   for (const provider of configuredProviders()) {
@@ -118,7 +121,7 @@ export async function completeChat({ system, messages, temperature = 0.2, maxTok
       continue;
     }
     try {
-      const text = (await provider.call({ system, messages, temperature, maxTokens })).trim();
+      const text = (await provider.call({ system, messages, temperature, maxTokens, json })).trim();
       if (text) {
         if (errors.length) console.warn('[assistant] fell back to', provider.name, '-', errors.join(' | '));
         return { text, provider: provider.name, providerLabel: provider.label };
