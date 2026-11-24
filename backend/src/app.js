@@ -13,6 +13,7 @@ import versionsRoutes from './routes/versions.js';
 import requestsRoutes from './routes/requests.js';
 import auditRoutes from './routes/audit.js';
 import assistantRoutes from './routes/assistant.js';
+import assistantDemoRoutes from './routes/assistantDemo.js';
 dotenv.config({ quiet: true });
 
 // Create tables once per process (or per serverless cold start).
@@ -27,6 +28,8 @@ function ensureSchema() {
 }
 
 const app = express();
+// Behind Vercel's proxy, req.ip should be the visitor's address (used for rate limiting).
+if (process.env.VERCEL) app.set('trust proxy', 1);
 app.use(cors({ origin: process.env.FRONTEND_URL || true }));
 app.use(express.json({ limit: '10mb' }));
 
@@ -39,6 +42,9 @@ app.get('/api/health', async (req, res) => {
     res.status(500).json({ status: 'error', database: 'disconnected' });
   }
 });
+
+// Browser-only demo mode: the assistant works without a database.
+app.use('/api/assistant/demo', assistantDemoRoutes);
 
 // Everything below needs the database tables.
 app.use('/api', async (req, res, next) => {

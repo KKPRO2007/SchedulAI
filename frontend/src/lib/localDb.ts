@@ -9,6 +9,37 @@ import type { AuditEntry, BulkResult, ChangeRequest, EntityKey, Faculty, Room, S
 // database is not reachable so the free demo always works. It mirrors the
 // server's routes and role checks.
 
+// The assistant needs a hosted model, so in demo mode the browser sends its local
+// published timetable to a database-free API route (same origin in production).
+const ASSISTANT_BASE = import.meta.env.VITE_API_URL ?? (import.meta.env.DEV ? 'http://localhost:5000' : '');
+const ASSISTANT_OFFLINE = 'The AI assistant needs an internet connection. Please check your connection and try again.';
+
+async function askDemoAssistant(input: {
+  question: string;
+  history: unknown[];
+  sessions: Timetable['sessions'];
+  rooms: Row[];
+  user: User;
+}): Promise<{ answer: string; provider: string; intent?: string }> {
+  const sessions = input.sessions.map((s) => ({
+    day: s.day, start: s.start, duration: s.duration, section: s.section, shift: s.shift, department: s.department,
+    subjectCode: s.subjectCode, subjectName: s.subjectName, faculty: s.faculty, facultyEmail: s.facultyEmail, room: s.room, isLab: s.isLab,
+  }));
+  const rooms = input.rooms.map((r) => ({ name: r.name, type: r.type, capacity: r.capacity }));
+  try {
+    const res = await fetch(`${ASSISTANT_BASE}/api/assistant/demo`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question: input.question, history: input.history, sessions, rooms, user: input.user }),
+    });
+    const data = (await res.json().catch(() => ({}))) as { answer?: string; provider?: string; intent?: string; error?: string };
+    if (!res.ok) return { answer: data.error ?? ASSISTANT_OFFLINE, provider: 'none' };
+    return { answer: data.answer ?? ASSISTANT_OFFLINE, provider: data.provider ?? 'none', intent: data.intent };
+  } catch {
+    return { answer: ASSISTANT_OFFLINE, provider: 'none' };
+  }
+}
+
 type Row = Record<string, unknown> & { id: number };
 type VersionRow = {
   id: number;
@@ -177,6 +208,19 @@ export async function localRequest(method: string, path: string, body: unknown, 
   if (!user) throw new HttpError(401, 'Please sign in');
 
   if (resource === 'stats') return Object.fromEntries(ENTITY_ORDER.map((k) => [k, store[k].length]));
+
+  /* ---------------- assistant ---------------- */
+  if (resource === 'assistant' && id === 'ask' && method === 'POST') {
+    const published = [...store.versions].reverse().find((x) => x.status === 'published');
+    if (!published) return { answer: 'No published timetable found.', provider: 'none' };
+    return askDemoAssistant({
+      question: String(b.question ?? ''),
+      history: Array.isArray(b.history) ? b.history : [],
+      sessions: published.payload.sessions,
+      rooms: store.rooms,
+      user,
+    });
+  }
 
   /* ---------------- versions ---------------- */
   if (resource === 'versions') {

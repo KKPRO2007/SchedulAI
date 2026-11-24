@@ -31,6 +31,7 @@ The demo uses a synthetic campus (5 departments, 22 sections across 4 shifts, 45
 - **Audit log:** imports, generation runs, approvals, publications, requests and exports are recorded with the actor and time.
 - **Downloads:** PDF (print), Excel (per section or per teacher), CSV and `.ics` calendar files.
 - **Security:** JWT authentication with role checks on every API call. The server rejects unauthorised requests even if the UI hides a button.
+- **Timetable assistant:** ask in plain language ("when am I free on Wednesday?", "who teaches DBMS?", "which labs are free Friday at 2pm?", "who has the highest load?"), including follow-ups such as "what about Thursday?". A local Naive Bayes model routes the question, the server retrieves only the timetable rows the user may see (students: their section; faculty: their sessions; admins and coordinators: the whole campus), and Groq (GPT-OSS 120B) writes the answer, with Gemini 2.5 Flash as the fallback. In the browser-only demo mode (no database) the assistant still works through a database-free API route. Without an LLM key it answers from the same data with built-in templates.
 - **Works offline:** if the API or database is unreachable, the demo runs entirely in the browser with the same roles and workflow.
 
 ## Architecture
@@ -40,6 +41,7 @@ The demo uses a synthetic campus (5 departments, 22 sections across 4 shifts, 45
 | Presentation | React, TypeScript, Tailwind CSS | Role workspaces, import wizard, timetable grids |
 | Application / API | Node.js, Express, JWT | Auth & roles, validation, bulk import, versions, requests, audit |
 | Intelligence | Constraint engine + scoring (TypeScript) | Hard/soft validation, candidate generation, substitution ranking |
+| Assistant | Naive Bayes router + Groq / Gemini (Node.js) | Intent routing, role-scoped retrieval, grounded answers ([details](backend/src/ml/README.md)) |
 | Data | PostgreSQL (Neon) | Master data, versioned timetables (JSONB), requests, audit log |
 
 ```
@@ -53,7 +55,8 @@ frontend/public/demo/  Sample files for the import demo
 ## Run locally
 
 ```bash
-# API (needs PostgreSQL; create backend/.env with DATABASE_URL=..., PORT=5000, AUTH_SECRET=...)
+# API (needs PostgreSQL; copy backend/.env.example to backend/.env and fill it in.
+# GROQ_API_KEY / GEMINI_API_KEY are optional and power the assistant.)
 cd backend && npm install && npm run dev
 
 # Web app (http://localhost:5173). Works without the API using browser demo data.
@@ -67,6 +70,8 @@ The repository root is one Vercel project: the frontend build is served as stati
 ```bash
 npx vercel@48.1.0 link --project schedul-ai
 npx vercel@48.1.0 env add AUTH_SECRET production   # any long random string
+npx vercel@48.1.0 env add GROQ_API_KEY production   # assistant (primary)
+npx vercel@48.1.0 env add GEMINI_API_KEY production # assistant (fallback)
 npx vercel@48.1.0 deploy --prod
 ```
 

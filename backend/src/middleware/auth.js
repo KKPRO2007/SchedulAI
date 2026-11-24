@@ -7,7 +7,9 @@ const SECRET = process.env.AUTH_SECRET || 'schedulai-dev-secret-change-me';
 const TTL = '12h';
 
 export function signToken(user) {
-  return jwt.sign({ email: user.email, name: user.name, role: user.role }, SECRET, { expiresIn: TTL });
+  const claims = { email: user.email, name: user.name, role: user.role };
+  if (user.section) claims.section = user.section;
+  return jwt.sign(claims, SECRET, { expiresIn: TTL });
 }
 
 export function requireAuth(req, res, next) {
