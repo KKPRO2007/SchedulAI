@@ -1,60 +1,107 @@
-
 import { classifyAssistantIntent } from '../ml/classifyAssistantIntent.js';
+import { completeChat } from './llm/providers.js';
+import {
+  buildContext, contextToText, describeSession, hasEntities, MAX_SESSION_LINES, weekdayName, workloadSummary,
+} from './timetableContext.js';
 
-function normalizeLookup(value) {
-    return String(value ?? '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+const HELP = 'I can answer timetable questions. Ask about a day, subject, room, faculty member, free rooms or slots, or teaching workload.';
+const FALLBACK_LIST_LIMIT = 25;
+
+function roleLabel(user) {
+  if (user?.role === 'student') return `a student in section ${user.section ?? 'unknown'}`;
+  if (user?.role === 'faculty') return 'a faculty member (they only see their own classes)';
+  if (user?.role === 'coordinator') return 'the timetable coordinator (sees the whole campus)';
+  return 'an administrator (sees the whole campus)';
 }
 
-function matchedValues(question, sessions, field) {
-    const normalizedQuestion = ` ${normalizeLookup(question)} `;
-    const values = [...new Set(sessions.map((session) => session[field]).filter(Boolean))];
-    return values.filter((value) => {
-        const normalizedValue = normalizeLookup(value);
-        return normalizedValue && normalizedQuestion.includes(` ${normalizedValue} `);
-    });
+/** Catalog of names so the LLM can resolve abbreviations like "DBMS" or "Sharma". */
+function catalog(sessions) {
+  const unique = (pick) => [...new Set(sessions.map(pick).filter(Boolean))].sort();
+  return [
+    `Subjects: ${unique((s) => (s.subjectCode ? `${s.subjectCode} ${s.subjectName}` : s.subjectName)).slice(0, 80).join('; ')}`,
+    `Faculty: ${unique((s) => s.faculty).slice(0, 60).join('; ')}`,
+    `Rooms: ${unique((s) => s.room).slice(0, 60).join('; ')}`,
+    `Sections: ${unique((s) => s.section).slice(0, 40).join('; ')}`,
+  ];
 }
 
-export function generateAIResponse(question, sessions) {
-    const q = question.trim().toLowerCase();
+function systemPrompt(user) {
+  return [
+    'You are the SchedulAI timetable assistant for a college.',
+    `You are talking to ${user?.name ? `${user.name}, ` : ''}${roleLabel(user)}. Today is ${weekdayName(0)}.`,
+    'Answer ONLY from the TIMETABLE DATA in the latest user message. Never invent classes, rooms, times or people.',
+    'If the data does not contain the answer, say so briefly and suggest what to ask instead (e.g. the full subject name, room or day).',
+    'Abbreviations may refer to entries in the catalog (e.g. "DBMS" for Database Management Systems); use the catalog to resolve them.',
+    'Be concise and friendly. Use short bullet lists for multiple classes, grouped by day, with 12-hour times. No markdown tables or headings.',
+    'For workload or utilisation questions, quote the numbers and give a one-line takeaway.',
+    'Only discuss the timetable, rooms, faculty load and related scheduling. Politely decline unrelated requests.',
+  ].join('\n');
+}
 
-    if (!q) {
-        return "Please enter a question.";
+const FREE_WORDS = /\b(free|empty|vacant|available|availability|unused|unbooked|unoccupied|idle|open|gap|gaps|break|breaks|not booked|not teaching|no class|nobody|makeup|book)\b/i;
+
+/**
+ * ML intent with a keyword guard: a "free" prediction needs an availability word, otherwise
+ * "what is in lab 1 on Monday" (a lookup) would be answered with free rooms.
+ */
+export function routeIntent(question) {
+  const prediction = classifyAssistantIntent(question);
+  if (prediction.intent === 'free' && !FREE_WORDS.test(question)) return { ...prediction, intent: 'all' };
+  if (prediction.intent !== 'free' && FREE_WORDS.test(question) && /\b(free|empty|vacant|unused|unbooked|unoccupied|idle)\b/i.test(question)) {
+    return { ...prediction, intent: 'free' };
+  }
+  return prediction;
+}
+
+/** Deterministic answer from the same retrieved facts; used when no LLM is available. */
+function templateAnswer(intent, question, ctx) {
+  const { entities, matched, sections } = ctx;
+  if (intent === 'free' || intent === 'workload') {
+    return sections.map(({ title, lines }) => `${title}:\n${lines.join('\n')}`).join('\n\n');
+  }
+  if (!hasEntities(entities)) {
+    if (intent === 'subject') return 'Which subject should I look up? Include its name or course code.';
+    if (intent === 'room') return 'Which room should I look up? Include its name or number.';
+    if (intent === 'faculty') return 'Which faculty member should I look up? Include their name.';
+    if (intent === 'unknown') return HELP;
+  }
+  if (!matched.length) return 'No classes found for your question.';
+  const lines = matched.slice(0, FALLBACK_LIST_LIMIT).map(describeSession);
+  if (matched.length > FALLBACK_LIST_LIMIT) lines.push(`…and ${matched.length - FALLBACK_LIST_LIMIT} more. Add a day, section or subject to narrow it down.`);
+  return lines.join('\n');
+}
+
+/**
+ * Answer a timetable question.
+ * sessions: what this user may see; allSessions: whole published timetable (for free-room checks).
+ * Returns { answer, provider, intent, confidence }.
+ */
+export async function answerQuestion({ question, sessions, allSessions = sessions, rooms = [], user }) {
+  const trimmed = String(question ?? '').trim();
+  if (!trimmed) return { answer: 'Please enter a question.', provider: 'none', intent: 'unknown', confidence: 0 };
+
+  const { intent, confidence } = routeIntent(trimmed);
+  const ctx = buildContext({ intent, question: trimmed, sessions, allSessions, rooms, user });
+  const fallback = { answer: templateAnswer(intent, trimmed, ctx), provider: 'built-in', intent, confidence };
+
+  // Give the LLM more to work with when the router or the entity matcher was unsure.
+  const extra = [];
+  const unsure = intent === 'unknown' || (!hasEntities(ctx.entities) && ['subject', 'room', 'faculty'].includes(intent));
+  if (unsure) {
+    extra.push({ title: 'Catalog of known names', lines: catalog(sessions.length ? sessions : allSessions) });
+    if (!ctx.matched.length) {
+      const all = sessions.slice(0, MAX_SESSION_LINES).map(describeSession);
+      if (sessions.length > MAX_SESSION_LINES) all.push(`… ${sessions.length - MAX_SESSION_LINES} more not shown`);
+      extra.push({ title: `All classes visible to this user (${sessions.length})`, lines: all });
     }
+    extra.push({ title: 'Summary', lines: workloadSummary(sessions, user, { ...ctx.entities, hours: [], period: null }) });
+  }
 
-    const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-    const normalizedQuestion = ` ${normalizeLookup(q)} `;
-    const selectedDay = days.find((day) => normalizedQuestion.includes(` ${day} `));
-    const { intent } = classifyAssistantIntent(question);
-    const subjects = matchedValues(question, sessions, 'subjectName');
-    const rooms = matchedValues(question, sessions, 'room');
-    const faculty = matchedValues(question, sessions, 'faculty');
-
-    if (intent === 'subject' && subjects.length === 0 && !selectedDay) {
-        return 'Which subject should I look up? Include its name or course code.';
-    }
-    if (intent === 'room' && rooms.length === 0 && !selectedDay) {
-        return 'Which room should I look up? Include its name or number.';
-    }
-    if (intent === 'faculty' && faculty.length === 0 && !selectedDay) {
-        return 'Which faculty member should I look up? Include their name.';
-    }
-    if (intent === 'unknown' && !selectedDay && !subjects.length && !rooms.length && !faculty.length) {
-        return 'I can answer timetable questions. Ask about a day, subject, room, or faculty member.';
-    }
-
-    let filteredSessions = sessions;
-    if (selectedDay) filteredSessions = filteredSessions.filter((session) => normalizeLookup(session.day) === selectedDay);
-    if (subjects.length) filteredSessions = filteredSessions.filter((session) => subjects.includes(session.subjectName));
-    if (rooms.length) filteredSessions = filteredSessions.filter((session) => rooms.includes(session.room));
-    if (faculty.length) filteredSessions = filteredSessions.filter((session) => faculty.includes(session.faculty));
-
-    if (filteredSessions.length === 0) {
-        return "No classes found for your question.";
-    }
-
-    const answer = filteredSessions.map(session => {
-        return `${session.subjectName} on ${session.day} at ${session.start}:00 in ${session.room} with ${session.faculty}`;
-    });
-
-    return answer.join("\n");
+  const data = contextToText([...ctx.sections, ...extra]);
+  const llm = await completeChat({
+    system: systemPrompt(user),
+    messages: [{ role: 'user', content: `TIMETABLE DATA (router intent: ${intent})\n${data}\n\nQUESTION: ${trimmed}` }],
+  });
+  if (!llm) return fallback;
+  return { answer: llm.text, provider: llm.provider, intent, confidence };
 }
