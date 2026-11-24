@@ -14,6 +14,7 @@ import requestsRoutes from './routes/requests.js';
 import auditRoutes from './routes/audit.js';
 import assistantRoutes from './routes/assistant.js';
 import assistantDemoRoutes from './routes/assistantDemo.js';
+import importAssistRoutes from './routes/importAssist.js';
 dotenv.config({ quiet: true });
 
 // Create tables once per process (or per serverless cold start).
@@ -45,6 +46,7 @@ app.get('/api/health', async (req, res) => {
 
 // Browser-only demo mode: the assistant works without a database.
 app.use('/api/assistant/demo', assistantDemoRoutes);
+app.use('/api/import', importAssistRoutes);
 
 // Everything below needs the database tables.
 app.use('/api', async (req, res, next) => {
