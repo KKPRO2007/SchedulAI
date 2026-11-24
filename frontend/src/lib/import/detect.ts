@@ -157,6 +157,8 @@ export type SheetAnalysis = {
   confidence: number;
   mappings: EntityMapping[];
   override: Override;
+  /** Columns whose mapping was suggested by AI (shown with an AI badge). */
+  aiColumns?: number[];
 };
 
 export type ParsedFile = {
@@ -465,5 +467,62 @@ export function reanalyze(file: ParsedFile, sheetIndex: number, override: Overri
   const next = analyzeSheet(raw, file.name, override);
   // keep the original header position for row numbers
   next.headerRow = sheet.headerRow + next.headerRow;
+  return { ...file, sheets: file.sheets.map((s, i) => (i === sheetIndex ? next : s)) };
+}
+
+/* ------------------------------------------------------------------ */
+/*  AI-assisted mapping                                                */
+/* ------------------------------------------------------------------ */
+
+export type AiColumnSuggestion = { column: number; entity: EntityKey; field: string; confidence: number; reason?: string };
+export type AiMappingResult = { sheetEntity: EntityKey | null; columns: AiColumnSuggestion[] };
+
+const ANCHORS: Record<EntityKey, string[]> = { faculty: ['name', 'email'], rooms: ['name'], sections: ['name'], subjects: ['code', 'name'] };
+
+/** Columns with a header or data that no entity field uses yet. */
+export function unmappedColumns(sheet: SheetAnalysis): number[] {
+  const used = new Set(sheet.mappings.flatMap((m) => Object.values(m.fields)));
+  return sheet.headers
+    .map((h, col) => ({ h, col }))
+    .filter(({ h, col }) => !used.has(col) && (h.trim() !== '' || sheet.body.some((row) => (row[col] ?? '') !== '')))
+    .map(({ col }) => col);
+}
+
+/** Merge AI suggestions into a sheet's mappings without overriding what the matcher already found. */
+export function applyAiMapping(file: ParsedFile, sheetIndex: number, result: AiMappingResult): ParsedFile {
+  const sheet = file.sheets[sheetIndex];
+  const open = new Set(unmappedColumns(sheet));
+  const primary = sheet.primary ?? result.sheetEntity ?? result.columns[0]?.entity ?? null;
+  const byEntity = new Map(sheet.mappings.map((m) => [m.entity, { ...m, fields: { ...m.fields } }]));
+  const aiColumns = new Set(sheet.aiColumns ?? []);
+
+  for (const s of result.columns) {
+    if (!open.has(s.column) || !ENTITIES[s.entity]?.fields.some((f) => f.key === s.field)) continue;
+    const mapping = byEntity.get(s.entity) ?? { entity: s.entity, fields: {}, derived: s.entity !== primary };
+    if (mapping.fields[s.field] !== undefined) continue;
+    mapping.fields[s.field] = s.column;
+    byEntity.set(s.entity, mapping);
+    open.delete(s.column);
+    aiColumns.add(s.column);
+  }
+
+  // Same rule as detection: an entity needs its anchor column (e.g. a name) to produce rows.
+  const mappings = [...byEntity.values()]
+    .filter((m) => ANCHORS[m.entity].some((a) => m.fields[a] !== undefined))
+    .map((m) => ({ ...m, derived: m.entity !== primary }))
+    .sort((a, b) => Number(a.derived) - Number(b.derived));
+  const kept = new Set(mappings.flatMap((m) => Object.values(m.fields)));
+  const aiScores = result.columns.filter((c) => kept.has(c.column)).map((c) => c.confidence);
+  const confidence = sheet.primary
+    ? sheet.confidence
+    : aiScores.length ? Math.min(0.95, (aiScores.reduce((a, b) => a + b, 0) / aiScores.length) * 0.9) : 0;
+
+  const next: SheetAnalysis = {
+    ...sheet,
+    primary: mappings.some((m) => m.entity === primary) ? primary : sheet.primary,
+    confidence,
+    mappings,
+    aiColumns: [...aiColumns].filter((c) => kept.has(c)),
+  };
   return { ...file, sheets: file.sheets.map((s, i) => (i === sheetIndex ? next : s)) };
 }
