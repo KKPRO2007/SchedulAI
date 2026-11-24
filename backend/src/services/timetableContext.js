@@ -67,15 +67,94 @@ function matchValues(normalizedQuestion, values) {
   });
 }
 
-/** Faculty match on full name or on a distinctive name part (e.g. "Sharma"). */
+/** True when two words differ by at most one edit or one swapped pair of letters. */
+function closeEnough(a, b) {
+  if (a === b) return true;
+  if (Math.abs(a.length - b.length) > 1 || Math.min(a.length, b.length) < 5) return false;
+  let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+  let prevPrev = prev;
+  for (let i = 1; i <= a.length; i += 1) {
+    const row = [i];
+    for (let j = 1; j <= b.length; j += 1) {
+      row[j] = Math.min(prev[j] + 1, row[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) row[j] = Math.min(row[j], prevPrev[j - 2] + 1);
+    }
+    prevPrev = prev;
+    prev = row;
+  }
+  return prev[b.length] <= 1;
+}
+
+const COMMON_SHORT_WORDS = new Set(['is', 'in', 'on', 'at', 'me', 'my', 'do', 'so', 'to', 'of', 'or', 'an', 'as', 'be', 'by', 'it', 'we', 'us', 'no', 'up', 'go', 'he', 'am', 'hi', 'ok', 'pm', 'id', 'if']);
+const NAME_FILLERS = new Set(['of', 'and', 'the', 'for', 'in']);
+/** Common abbreviations whose letters are not simply the initials of the subject name. */
+const SUBJECT_ALIASES = {
+  dbms: 'database management systems',
+  oops: 'object oriented programming',
+  dsa: 'data structures',
+  maths: 'mathematics',
+  math: 'mathematics',
+  coa: 'computer organization',
+  daa: 'design and analysis of algorithms',
+};
+
+function initialsOf(name) {
+  const words = normalizeLookup(name).split(' ').filter(Boolean);
+  const all = words.map((w) => w[0]).join('');
+  const significant = words.filter((w) => !NAME_FILLERS.has(w)).map((w) => w[0]).join('');
+  return [...new Set([all, significant])].filter((i) => i.length >= 2);
+}
+
+/**
+ * Subjects named by exact text, by initials ("OS", "TOC"), by a common alias ("DBMS"),
+ * or with one typo per word ("opertaing systems").
+ */
+function matchSubjects(question, q, names) {
+  const literal = matchValues(q, names);
+  const words = q.trim().split(' ');
+  const shortTokens = new Set(words.filter((w) => w.length >= 2 && w.length <= 5));
+  const covered = (token) => literal.some((name) => ` ${normalizeLookup(name)} `.includes(` ${token} `));
+
+  const byAlias = names.filter((name) => {
+    const n = normalizeLookup(name);
+    if (/\blab\b/.test(n) && !/\b(lab|labs|practical)\b/.test(q)) return false;
+    const base = n.replace(/\s*\blab\b\s*/g, ' ').trim();
+    const aliasHit = Object.entries(SUBJECT_ALIASES).some(([alias, full]) => shortTokens.has(alias) && !covered(alias) && base.includes(full));
+    const initialsHit = initialsOf(base).some((ini) => shortTokens.has(ini) && !covered(ini)
+      && (ini.length >= 3 || !COMMON_SHORT_WORDS.has(ini)));
+    return aliasHit || initialsHit;
+  });
+
+  let fuzzy = [];
+  if (!literal.length && !byAlias.length) {
+    fuzzy = names.filter((name) => {
+      const parts = normalizeLookup(name).split(' ').filter((w) => w.length >= 3 && !NAME_FILLERS.has(w) && w !== 'lab');
+      return parts.length > 0 && parts.every((part) => words.some((w) => closeEnough(w, part)));
+    });
+  }
+  const all = [...new Set([...literal, ...byAlias, ...fuzzy])];
+  // "ML lab" means the lab, not the theory course with the same initials.
+  if (/\b(lab|labs|practical)\b/.test(q)) {
+    const isLab = (n) => /\blab\b/i.test(n);
+    const labBases = new Set(all.filter(isLab).map((n) => normalizeLookup(n).replace(/\s*\blab\b/g, '').trim()));
+    return all.filter((n) => isLab(n) || !labBases.has(normalizeLookup(n)));
+  }
+  return all;
+}
+
+/** Faculty match on full name or on a distinctive name part (e.g. "Sharma", or "Banerjee" typed "Banerje"). */
 function matchFaculty(normalizedQuestion, names) {
   const honorifics = new Set(['dr', 'prof', 'mr', 'mrs', 'ms']);
-  return names.filter((name) => {
+  const words = normalizedQuestion.trim().split(' ');
+  const exact = names.filter((name) => {
     const n = normalizeLookup(name);
     if (!n) return false;
     if (normalizedQuestion.includes(` ${n} `)) return true;
     return n.split(' ').some((part) => part.length >= 4 && !honorifics.has(part) && normalizedQuestion.includes(` ${part} `));
   });
+  if (exact.length) return exact;
+  return names.filter((name) => normalizeLookup(name).split(' ')
+    .some((part) => part.length >= 5 && !honorifics.has(part) && words.some((w) => closeEnough(w, part))));
 }
 
 /** "10am", "2 pm", "10 30 am", "at 2", "11 o clock" → 24h hours. Bare "at 1–6" means afternoon. */
@@ -100,7 +179,7 @@ export function extractEntities(question, sessions) {
   if (q.includes(' tomorrow ')) days.push(weekdayName(1));
 
   const unique = (field) => [...new Set(sessions.map((s) => s[field]).filter(Boolean))];
-  const subjectNames = matchValues(q, unique('subjectName'));
+  const subjectNames = matchSubjects(question, q, unique('subjectName'));
   const subjectCodes = matchValues(q, unique('subjectCode'));
   return {
     days: [...new Set(days)].filter((d) => DAYS.includes(d)),
@@ -147,18 +226,36 @@ export function freeRooms(allSessions, rooms, e) {
     : [...new Set(allSessions.map((s) => s.room).filter(Boolean))].map((name) => ({ name }));
   const days = e.days.length ? e.days : DAYS;
   const hours = (e.hours.length ? e.hours : TEACHING_HOURS).filter((h) => inPeriod(h, e.period));
-  const occupied = new Set();
-  for (const s of allSessions) for (const h of sessionHours(s)) occupied.add(`${s.day}|${h}|${s.room}`);
+  const occupied = new Map();
+  for (const s of allSessions) for (const h of sessionHours(s)) occupied.set(`${s.day}|${h}|${s.room}`, s);
 
-  const wanted = e.rooms.length ? roomList.filter((r) => e.rooms.includes(r.name)) : roomList;
-  const labsOnly = e.labsOnly;
+  const wanted = (e.rooms.length ? roomList.filter((r) => e.rooms.includes(r.name)) : roomList)
+    .filter((r) => !e.labsOnly || /lab/i.test(`${r.type ?? ''} ${r.name}`));
+  const label = (r) => (r.capacity ? `${r.name} (${r.type ?? 'room'}, ${r.capacity} seats)` : r.name);
+
+  // A whole-day question reads better per room: "A-101: free 8 AM, 2 PM".
+  if (!e.hours.length && days.length === 1) {
+    return wanted.map((r) => {
+      const free = hours.filter((h) => !occupied.has(`${days[0]}|${h}|${r.name}`));
+      const text = free.length === hours.length ? 'free all day' : free.length ? `free at ${free.map(fmtHour).join(', ')}` : 'fully booked';
+      return `${days[0]} · ${label(r)}: ${text}`;
+    });
+  }
+
   const lines = [];
+  // Asking about specific rooms: say free or who has it booked.
+  if (e.rooms.length) {
+    for (const day of days) for (const hour of hours) for (const r of wanted) {
+      const booking = occupied.get(`${day}|${hour}|${r.name}`);
+      lines.push(`${day} ${fmtHour(hour)} · ${r.name}: ${booking ? `booked (${booking.subjectName}, ${booking.section}, ${booking.faculty})` : 'free'}`);
+    }
+    return lines.slice(0, 60);
+  }
   for (const day of days) {
     for (const hour of hours) {
       const free = wanted
-        .filter((r) => !labsOnly || /lab/i.test(`${r.type ?? ''} ${r.name}`))
         .filter((r) => !occupied.has(`${day}|${hour}|${r.name}`))
-        .map((r) => (r.capacity ? `${r.name} (${r.type ?? 'room'}, ${r.capacity} seats)` : r.name));
+        .map(label);
       lines.push(`${day} ${fmtHour(hour)}: ${free.length ? free.slice(0, 15).join(', ') + (free.length > 15 ? ` … +${free.length - 15} more` : '') : 'no free room'}`);
     }
   }

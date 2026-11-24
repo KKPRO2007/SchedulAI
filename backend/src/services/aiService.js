@@ -51,7 +51,9 @@ function systemPrompt(user) {
     'You are the SchedulAI timetable assistant for a college.',
     `You are talking to ${user?.name ? `${user.name}, ` : ''}${roleLabel(user)}. Today is ${weekdayName(0)}.`,
     'Answer ONLY from the TIMETABLE DATA in the latest user message. Never invent classes, rooms, times or people.',
-    'If the data does not contain the answer, say so briefly and suggest what to ask instead (e.g. the full subject name, room or day).',
+    'If "Matching classes" is (0) for a clear question, answer plainly, e.g. "You have no classes on Wednesday." Do not ask the user to rephrase a question that was already clear.',
+    'If the question itself is unclear or names something not in the catalog, say so briefly and suggest what to ask instead (e.g. the full subject name, room or day).',
+    'Do not comment on whether a time has already passed unless the user asks.',
     'Abbreviations may refer to entries in the catalog (e.g. "DBMS" for Database Management Systems); use the catalog to resolve them.',
     'Be concise and friendly. Use short bullet lists for multiple classes, grouped by day, with 12-hour times. No markdown tables or headings.',
     'For workload or utilisation questions, quote the numbers and give a one-line takeaway.',
@@ -59,7 +61,8 @@ function systemPrompt(user) {
   ].join('\n');
 }
 
-const FREE_WORDS = /\b(free|empty|vacant|available|availability|unused|unbooked|unoccupied|idle|open|gap|gaps|break|breaks|not booked|not teaching|no class|nobody|makeup|book)\b/i;
+const WORKLOAD_WORDS = /\b(workload|work load|overloaded|underloaded|underutili[sz]ed|utili[sz]ation|teaching load|spare capacity|busiest|lightest|how many hours|total hours|hours per week|statistics|stats)\b/i;
+const FREE_WORDS =/\b(free|empty|vacant|available|availability|unused|unbooked|unoccupied|idle|open|gap|gaps|break|breaks|not booked|not teaching|no class|nobody|makeup|book)\b/i;
 
 /**
  * ML intent with a keyword guard: a "free" prediction needs an availability word, otherwise
@@ -68,6 +71,7 @@ const FREE_WORDS = /\b(free|empty|vacant|available|availability|unused|unbooked|
 export function routeIntent(question) {
   const prediction = classifyAssistantIntent(question);
   if (prediction.intent === 'free' && !FREE_WORDS.test(question)) return { ...prediction, intent: 'all' };
+  if (prediction.intent !== 'workload' && WORKLOAD_WORDS.test(question)) return { ...prediction, intent: 'workload' };
   if (prediction.intent !== 'free' && FREE_WORDS.test(question) && /\b(free|empty|vacant|unused|unbooked|unoccupied|idle)\b/i.test(question)) {
     return { ...prediction, intent: 'free' };
   }

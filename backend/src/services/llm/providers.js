@@ -39,16 +39,24 @@ async function postJson(provider, url, headers, body, timeoutMs) {
 
 /** messages: [{ role: 'user' | 'assistant', content: string }] */
 async function callGroq({ system, messages, temperature, maxTokens }) {
+  const model = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
+  const body = {
+    model,
+    temperature,
+    max_tokens: maxTokens,
+    messages: [{ role: 'system', content: system }, ...messages],
+  };
+  // gpt-oss models reason before answering; keep it short for quick lookups and leave token room for the answer.
+  if (/gpt-oss/.test(model)) {
+    body.reasoning_effort = 'low';
+    body.include_reasoning = false;
+    body.max_tokens = maxTokens + 800;
+  }
   const data = await postJson(
     'groq',
     'https://api.groq.com/openai/v1/chat/completions',
     { authorization: `Bearer ${process.env.GROQ_API_KEY}` },
-    {
-      model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
-      temperature,
-      max_tokens: maxTokens,
-      messages: [{ role: 'system', content: system }, ...messages],
-    },
+    body,
     envNumber('GROQ_TIMEOUT_MS', DEFAULT_TIMEOUT_MS),
   );
   return data?.choices?.[0]?.message?.content ?? '';
@@ -75,13 +83,22 @@ async function callGemini({ system, messages, temperature, maxTokens }) {
   return parts.map((part) => part.text ?? '').join('');
 }
 
+// Groq's free tier allows about 8k tokens per minute, so large prompts go straight to Gemini.
 const PROVIDERS = [
-  { name: 'groq', label: 'Groq', keyEnv: 'GROQ_API_KEY', call: callGroq },
-  { name: 'gemini', label: 'Gemini', keyEnv: 'GEMINI_API_KEY', call: callGemini },
+  { name: 'groq', label: 'Groq', keyEnv: 'GROQ_API_KEY', call: callGroq, maxPromptTokens: () => envNumber('GROQ_MAX_PROMPT_TOKENS', 3500) },
+  { name: 'gemini', label: 'Gemini', keyEnv: 'GEMINI_API_KEY', call: callGemini, maxPromptTokens: () => envNumber('GEMINI_MAX_PROMPT_TOKENS', 200000) },
 ];
+
+/** Provider name -> time (ms) until which it is skipped after a rate limit. */
+const cooldownUntil = new Map();
 
 export function configuredProviders() {
   return PROVIDERS.filter((p) => Boolean(process.env[p.keyEnv]?.trim()));
+}
+
+/** Rough token estimate (about four characters per token for English text). */
+export function estimateTokens(system, messages) {
+  return Math.ceil((system.length + messages.reduce((sum, m) => sum + m.content.length, 0)) / 4);
 }
 
 /**
@@ -90,12 +107,25 @@ export function configuredProviders() {
  */
 export async function completeChat({ system, messages, temperature = 0.2, maxTokens = 700 }) {
   const errors = [];
+  const promptTokens = estimateTokens(system, messages);
   for (const provider of configuredProviders()) {
+    if (promptTokens > provider.maxPromptTokens()) {
+      errors.push(`${provider.name}: skipped, prompt ~${promptTokens} tokens`);
+      continue;
+    }
+    if ((cooldownUntil.get(provider.name) ?? 0) > Date.now()) {
+      errors.push(`${provider.name}: skipped, rate-limited`);
+      continue;
+    }
     try {
       const text = (await provider.call({ system, messages, temperature, maxTokens })).trim();
-      if (text) return { text, provider: provider.name, providerLabel: provider.label };
+      if (text) {
+        if (errors.length) console.warn('[assistant] fell back to', provider.name, '-', errors.join(' | '));
+        return { text, provider: provider.name, providerLabel: provider.label };
+      }
       errors.push(`${provider.name}: empty response`);
     } catch (error) {
+      if (error.status === 429) cooldownUntil.set(provider.name, Date.now() + envNumber('LLM_RATE_LIMIT_COOLDOWN_MS', 20000));
       errors.push(error.message);
     }
   }
