@@ -1,7 +1,7 @@
 const STOP_WORDS = new Set([
   'a', 'an', 'and', 'are', 'can', 'does', 'do', 'for', 'give', 'have', 'in', 'is',
   'it', 'list', 'me', 'my', 'of', 'on', 'or', 'please', 'show', 'the', 'there',
-  'this', 'to', 'up', 'what', 'when', 'which', 'who', 'with',
+  'this', 'to', 'up', 'what', 'when', 'which', 'with',
 ]);
 
 export function tokenize(text) {
@@ -10,7 +10,12 @@ export function tokenize(text) {
     .map(normalizeWord);
 }
 
+const WEEKDAYS = new Set(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday', 'today', 'tomorrow']);
+
 function normalizeWord(word) {
+  // Collapse placeholders so the model learns "a day/number was mentioned", not which one.
+  if (WEEKDAYS.has(word) || /^(?:mon|tue|wed|thu|fri|sat)day'?s?$/.test(word)) return '<day>';
+  if (/^\d+$/.test(word)) return '<num>';
   if (word.length > 5 && word.endsWith('ies')) return `${word.slice(0, -3)}y`;
   if (word.length > 5 && /(?:sses|ches|shes|xes|zes)$/.test(word)) return word.slice(0, -2);
   if (word.length > 4 && word.endsWith('s') && !word.endsWith('ss')) return word.slice(0, -1);
@@ -39,7 +44,7 @@ export function trainIntentModel(examples) {
 
   return {
     algorithm: 'multinomial-naive-bayes',
-    featureExtractor: 'normalized-unigrams-v1',
+    featureExtractor: 'normalized-unigrams-v2',
     vocabulary: [...vocabulary].sort(),
     labels,
   };

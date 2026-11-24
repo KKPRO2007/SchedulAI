@@ -1,6 +1,10 @@
 # Assistant intent model
 
-This backend-only ML module uses a multinomial Naive Bayes text classifier to route timetable questions to day, subject, room, faculty, or full-schedule lookups. It runs locally in Node.js and has no hosted model, API key, or additional runtime dependency. The timetable remains the source of answers; the classifier selects which timetable entries to retrieve.
+This backend-only ML module uses a multinomial Naive Bayes text classifier to route timetable questions to day, subject, room, faculty, full-schedule, free-slot, or workload lookups. It runs locally in Node.js with no API key or additional runtime dependency. The timetable remains the source of answers: the classifier decides which timetable entries and summaries are retrieved, and an optional hosted LLM (Groq, then Gemini) only phrases the answer from that retrieved data. Without an LLM key the assistant answers from the same retrieval with built-in templates.
+
+## Features
+
+Questions are lower-cased and split into words; common stop words are dropped (`who` is kept because it signals faculty questions), simple plurals are folded, weekday names become a `<day>` placeholder and plain numbers become `<num>`. The placeholders let the model learn that a day or time was mentioned without memorising which one.
 
 ## Retrain
 

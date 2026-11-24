@@ -1,6 +1,6 @@
 import { calibrateConfidenceThreshold, evaluateIntentModel, trainIntentModel } from './naiveBayes.js';
 
-export const ASSISTANT_INTENTS = ['all', 'day', 'faculty', 'room', 'subject'];
+export const ASSISTANT_INTENTS = ['all', 'day', 'faculty', 'free', 'room', 'subject', 'workload'];
 export const HOLDOUT_FRACTION = 0.2;
 export const SPLIT_SEED = 42;
 
