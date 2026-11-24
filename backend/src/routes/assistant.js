@@ -19,7 +19,7 @@ function withSection(user) {
 
 router.post("/ask", async (req, res) => {
     try {
-        const { question } = req.body ?? {};
+        const { question, history } = req.body ?? {};
 
         if (typeof question !== 'string' || !question.trim()) {
             return res.status(400).json({ error: "Question is required" });
@@ -53,7 +53,7 @@ router.post("/ask", async (req, res) => {
             .then((r) => r.rows)
             .catch(() => []);
 
-        const { answer, provider, intent } = await answerQuestion({ question, sessions, allSessions, rooms, user });
+        const { answer, provider, intent } = await answerQuestion({ question, sessions, allSessions, rooms, user, history });
 
         res.json({ answer, provider, intent });
     } catch (error) {

@@ -4,19 +4,24 @@ import PageHeader from '../ui/PageHeader';
 import { api } from '../../lib/api';
 import { useSession } from '../../lib/auth';
 
-type Message = { id: number; role: 'assistant' | 'user'; text: string; time: string };
-type AskResponse = { answer?: unknown };
+type Message = { id: number; role: 'assistant' | 'user'; text: string; time: string; provider?: string };
+type AskResponse = { answer?: unknown; provider?: unknown };
+
+const PROVIDER_LABELS: Record<string, string> = { groq: 'Groq', gemini: 'Gemini', 'built-in': 'Built-in lookup' };
+const HISTORY_TURNS = 6;
+const UNAVAILABLE = 'I couldn’t reach the timetable service just now. Check your connection and try again in a moment.';
 
 const PROMPTS = [
   { icon: CalendarDays, title: 'My Monday', text: 'Show me my classes on Monday', tint: 'text-sky-300' },
-  { icon: Clock3, title: 'Find a class', text: 'What classes are scheduled on Wednesday?', tint: 'text-violet-300' },
-  { icon: Sparkles, title: 'Full week', text: 'Show me the whole published timetable', tint: 'text-amber-300' },
+  { icon: Clock3, title: 'Free periods', text: 'When am I free on Wednesday?', tint: 'text-violet-300' },
+  { icon: Sparkles, title: 'Free rooms', text: 'Which rooms are free on Friday at 2pm?', tint: 'text-amber-300' },
+  { icon: Bot, title: 'Workload', text: 'How many hours are taught each week?', tint: 'text-emerald-300' },
 ];
 
 const initialMessage: Message = {
   id: 1,
   role: 'assistant',
-  text: 'Hi! I can help you find information in the published timetable. Ask about a day, subject, room, or faculty member to get started.',
+  text: 'Hi! Ask me anything about the published timetable: your classes on a day, who teaches a subject, free rooms or free periods, or teaching workload. Follow-up questions like “what about Thursday?” work too.',
   time: 'Just now',
 };
 
@@ -40,25 +45,31 @@ export default function AssistantPage() {
     const question = raw.trim();
     if (!question || pending) return;
 
+    const history = messages
+      .filter((message) => message.id !== initialMessage.id)
+      .slice(-HISTORY_TURNS)
+      .map(({ role, text }) => ({ role, text }));
     const userMessage: Message = { id: nextId.current++, role: 'user', text: question, time: clockTime() };
     setMessages((current) => [...current, userMessage]);
     setDraft('');
     setPending(true);
 
     try {
-      const result = await api.post<AskResponse | null>('/assistant/ask', { question });
+      const result = await api.post<AskResponse | null>('/assistant/ask', { question, history });
       const answer = typeof result?.answer === 'string' ? result.answer.trim() : '';
+      const provider = typeof result?.provider === 'string' ? result.provider : undefined;
       setMessages((current) => [...current, {
         id: nextId.current++,
         role: 'assistant',
-        text: answer || 'The AI API is not linked or is currently out of service. Please try again later.',
+        text: answer || UNAVAILABLE,
         time: clockTime(),
+        provider: answer ? provider : undefined,
       }]);
     } catch {
       setMessages((current) => [...current, {
         id: nextId.current++,
         role: 'assistant',
-        text: 'The AI API is not linked or is currently out of service. Please try again later.',
+        text: UNAVAILABLE,
         time: clockTime(),
       }]);
     } finally {
@@ -133,6 +144,9 @@ export default function AssistantPage() {
                   </div>
                   <div className={`mt-1.5 flex items-center gap-2 text-[10px] text-[var(--text-muted)] ${message.role === 'user' ? 'justify-end' : ''}`}>
                     <span>{message.role === 'assistant' ? 'SchedulAI' : 'You'} · {message.time}</span>
+                    {message.provider && PROVIDER_LABELS[message.provider] && (
+                      <span className="rounded-full border border-white/[0.08] bg-white/[0.04] px-1.5 py-px text-[9px] tracking-wide" title="Which engine wrote this answer">{PROVIDER_LABELS[message.provider]}</span>
+                    )}
                     {message.role === 'assistant' && message.id !== initialMessage.id && (
                       <button type="button" onClick={() => void copyMessage(message)} className="inline-flex items-center gap-1 opacity-0 transition hover:text-white group-hover:opacity-100 focus:opacity-100" aria-label="Copy assistant response">
                         {copied === message.id ? <Check size={11} /> : <ArrowUpRight size={11} />}
@@ -158,7 +172,7 @@ export default function AssistantPage() {
           <div className="relative border-t border-white/[0.07] bg-black/[0.08] p-4 sm:p-5">
             {messages.length === 1 && (
               <div className="mb-3 flex flex-wrap gap-2">
-                {['What classes do I have on Monday?', 'Show me the whole published timetable'].map((text) => (
+                {['What classes do I have today?', 'Who teaches Operating Systems?', 'Show me the whole published timetable'].map((text) => (
                   <button key={text} type="button" onClick={() => void ask(text)} disabled={pending} className="rounded-full border border-white/[0.09] bg-white/[0.035] px-3 py-1.5 text-[11px] text-[var(--text-secondary)] transition hover:border-sky-300/30 hover:bg-sky-300/[0.07] hover:text-sky-100 disabled:opacity-50">
                     {text}
                   </button>
@@ -207,11 +221,11 @@ export default function AssistantPage() {
 
           <section className="overflow-hidden rounded-3xl border border-sky-300/[0.14] bg-gradient-to-br from-sky-400/[0.08] via-indigo-500/[0.06] to-violet-500/[0.09] p-5">
             <div className="flex items-center gap-2 text-sky-100"><ShieldCheck size={16} /><h2 className="text-sm font-semibold">Grounded in your timetable</h2></div>
-            <p className="mt-2 text-xs leading-5 text-[var(--text-secondary)]">Responses are looked up from the latest published schedule. Faculty accounts only see their own sessions.</p>
+            <p className="mt-2 text-xs leading-5 text-[var(--text-secondary)]">Answers are built from the latest published schedule. Students see their own section and faculty see their own sessions.</p>
             <div className="mt-4 flex items-center gap-2 border-t border-white/[0.08] pt-3 text-[10px] text-[var(--text-muted)]"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Private, role-aware access</div>
           </section>
 
-          <p className="px-2 text-[10px] leading-4 text-[var(--text-muted)]">This assistant looks up timetable records. It may not understand questions outside the schedule.</p>
+          <p className="px-2 text-[10px] leading-4 text-[var(--text-muted)]">An AI model phrases each answer from the timetable records it is given. It can make mistakes, so check the timetable before acting on anything important.</p>
         </aside>
       </div>
     </div>

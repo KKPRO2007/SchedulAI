@@ -216,8 +216,38 @@ export function workloadSummary(sessions, user, e) {
  * Build the grounded context for one question.
  * Returns { entities, matched, sections: [{ title, lines }], truncated }.
  */
-export function buildContext({ intent, question, sessions, allSessions, rooms = [], user }) {
-  const entities = extractEntities(question, sessions.length ? sessions : allSessions);
+const FOLLOW_UP = /^(and|also|what about|how about|then|same|ok|okay|and what about|what of)\b/i;
+
+/** "What about Thursday?" keeps the subject/room/person from the previous question. */
+export function isFollowUp(question) {
+  return FOLLOW_UP.test(question.trim()) || question.trim().split(/\s+/).length <= 4;
+}
+
+export function mergeEntities(current, previous) {
+  if (!previous) return current;
+  const merged = { ...current };
+  for (const key of ['days', 'subjects', 'rooms', 'faculty', 'sections']) {
+    if (!merged[key].length) merged[key] = previous[key];
+  }
+  // A new day or time replaces the old time window instead of combining with it.
+  if (!current.days.length && !current.hours.length && !current.period) {
+    merged.hours = previous.hours;
+    merged.period = previous.period;
+  }
+  merged.labsOnly = current.labsOnly || previous.labsOnly;
+  return merged;
+}
+
+/** previousQuestions: earlier user questions, most recent first. */
+export function buildContext({ intent, question, sessions, allSessions, rooms = [], user, previousQuestions = [] }) {
+  const pool = sessions.length ? sessions : allSessions;
+  let entities = extractEntities(question, pool);
+  let current = question;
+  for (const previous of previousQuestions) {
+    if (!isFollowUp(current)) break;
+    entities = mergeEntities(entities, extractEntities(previous, pool));
+    current = previous;
+  }
   const sections = [];
   let matched = [];
   let truncated = 0;

@@ -1,8 +1,29 @@
 import { classifyAssistantIntent } from '../ml/classifyAssistantIntent.js';
 import { completeChat } from './llm/providers.js';
 import {
-  buildContext, contextToText, describeSession, hasEntities, MAX_SESSION_LINES, weekdayName, workloadSummary,
+  buildContext, contextToText, describeSession, hasEntities, isFollowUp, MAX_SESSION_LINES, weekdayName, workloadSummary,
 } from './timetableContext.js';
+
+const MAX_HISTORY_TURNS = 6;
+const MAX_TURN_CHARS = 1200;
+
+/** Keep the last few chat turns, alternating user/assistant, starting with a user turn. */
+export function sanitizeHistory(history) {
+  if (!Array.isArray(history)) return [];
+  const turns = history
+    .filter((t) => (t?.role === 'user' || t?.role === 'assistant') && typeof t.text === 'string' && t.text.trim())
+    .map((t) => ({ role: t.role, content: t.text.trim().slice(0, MAX_TURN_CHARS) }))
+    .slice(-MAX_HISTORY_TURNS);
+  while (turns.length && turns[0].role !== 'user') turns.shift();
+  const alternating = [];
+  for (const turn of turns) {
+    if (alternating.length && alternating.at(-1).role === turn.role) alternating[alternating.length - 1] = turn;
+    else alternating.push(turn);
+  }
+  // The new question is appended as a user turn, so history must end with the assistant.
+  if (alternating.at(-1)?.role === 'user') alternating.pop();
+  return alternating;
+}
 
 const HELP = 'I can answer timetable questions. Ask about a day, subject, room, faculty member, free rooms or slots, or teaching workload.';
 const FALLBACK_LIST_LIMIT = 25;
@@ -76,12 +97,19 @@ function templateAnswer(intent, question, ctx) {
  * sessions: what this user may see; allSessions: whole published timetable (for free-room checks).
  * Returns { answer, provider, intent, confidence }.
  */
-export async function answerQuestion({ question, sessions, allSessions = sessions, rooms = [], user }) {
+export async function answerQuestion({ question, sessions, allSessions = sessions, rooms = [], user, history = [] }) {
   const trimmed = String(question ?? '').trim();
   if (!trimmed) return { answer: 'Please enter a question.', provider: 'none', intent: 'unknown', confidence: 0 };
 
-  const { intent, confidence } = routeIntent(trimmed);
-  const ctx = buildContext({ intent, question: trimmed, sessions, allSessions, rooms, user });
+  const turns = sanitizeHistory(history);
+  const previousQuestions = turns.filter((t) => t.role === 'user').map((t) => t.content).reverse();
+  let { intent, confidence } = routeIntent(trimmed);
+  // A bare follow-up ("what about 3pm?") keeps the topic of the conversation.
+  if (isFollowUp(trimmed) && (intent === 'unknown' || intent === 'day')) {
+    const earlier = previousQuestions.map(routeIntent).find((p) => p.intent !== 'unknown');
+    if (earlier) intent = earlier.intent;
+  }
+  const ctx = buildContext({ intent, question: trimmed, sessions, allSessions, rooms, user, previousQuestions });
   const fallback = { answer: templateAnswer(intent, trimmed, ctx), provider: 'built-in', intent, confidence };
 
   // Give the LLM more to work with when the router or the entity matcher was unsure.
@@ -100,7 +128,10 @@ export async function answerQuestion({ question, sessions, allSessions = session
   const data = contextToText([...ctx.sections, ...extra]);
   const llm = await completeChat({
     system: systemPrompt(user),
-    messages: [{ role: 'user', content: `TIMETABLE DATA (router intent: ${intent})\n${data}\n\nQUESTION: ${trimmed}` }],
+    messages: [
+      ...turns,
+      { role: 'user', content: `TIMETABLE DATA (router intent: ${intent})\n${data}\n\nQUESTION: ${trimmed}` },
+    ],
   });
   if (!llm) return fallback;
   return { answer: llm.text, provider: llm.provider, intent, confidence };
