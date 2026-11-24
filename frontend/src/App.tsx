@@ -10,6 +10,7 @@ import Topbar from './components/layout/Topbar';
 import { homeFor, navFor, type PageId } from './components/layout/nav';
 import Scene3D from './components/three/LazyScene';
 import { Toaster } from './components/ui/toast';
+import ErrorBoundary from './components/ui/ErrorBoundary';
 
 const Overview = lazy(() => import('./components/dashboard/Overview'));
 const MySchedule = lazy(() => import('./components/dashboard/MySchedule'));
@@ -39,6 +40,7 @@ function Workspace({ page, role }: { page: PageId; role: Role }) {
       <main className="min-w-0 flex-1">
         <Topbar active={page} onMenu={() => setMenuOpen(true)} />
         <div className="w-full p-4 sm:p-6 xl:p-8 2xl:px-10">
+          <ErrorBoundary resetKey={page}>
           <Suspense
             fallback={
               <div className="flex h-[60vh] items-center justify-center">
@@ -61,6 +63,7 @@ function Workspace({ page, role }: { page: PageId; role: Role }) {
               {page === 'settings' && <SettingsPage />}
             </div>
           </Suspense>
+          </ErrorBoundary>
         </div>
       </main>
     </div>
@@ -88,13 +91,15 @@ export default function App() {
 
   return (
     <>
-      {view}
+      <ErrorBoundary resetKey={path}>{view}</ErrorBoundary>
       <Toaster />
     </>
   );
 }
 
 function Redirect({ to }: { to: string }) {
-  useEffect(() => navigate(to), [to]);
+  useEffect(() => {
+    navigate(to);
+  }, [to]);
   return null;
 }

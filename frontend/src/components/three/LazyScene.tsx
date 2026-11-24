@@ -1,4 +1,5 @@
 import { lazy, Suspense } from 'react';
+import ErrorBoundary from '../ui/ErrorBoundary';
 
 const Scene3D = lazy(() => import('./Scene3D'));
 
@@ -29,9 +30,11 @@ export default function LazyScene({ variant }: { variant: Variant }) {
         </div>
       </div>
 
-      <Suspense fallback={null}>
-        <Scene3D variant={variant} />
-      </Suspense>
+      <ErrorBoundary fallback={null}>
+        <Suspense fallback={null}>
+          <Scene3D variant={variant} />
+        </Suspense>
+      </ErrorBoundary>
 
       {/* In front of the canvas (same layer, later in the DOM): beam, horizon, vignette */}
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden" aria-hidden="true">

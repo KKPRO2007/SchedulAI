@@ -43,7 +43,7 @@ export const NAV: NavItem[] = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard, group: 'Workspace', roles: STAFF },
   { id: 'schedule', label: 'My Schedule', icon: CalendarHeart, group: 'Workspace', roles: ['faculty'] },
   { id: 'my-timetable', label: 'My Timetable', icon: CalendarHeart, group: 'Workspace', roles: ['student'] },
-  { id: 'assistant', label: 'AI Assistant', icon: Bot, badge: 'NEW', group: 'Workspace', roles: ['admin', 'coordinator', 'faculty'] },
+  { id: 'assistant', label: 'AI Assistant', icon: Bot, badge: 'NEW', group: 'Workspace', roles: ['admin', 'coordinator', 'faculty', 'student'] },
   { id: 'import', label: 'Data Import', icon: UploadCloud, badge: 'AI', group: 'Workspace', roles: STAFF },
   { id: 'studio', label: 'Generate', icon: Sparkles, group: 'Scheduling', roles: STAFF },
   { id: 'versions', label: 'Versions & Approval', icon: History, group: 'Scheduling', roles: STAFF },
