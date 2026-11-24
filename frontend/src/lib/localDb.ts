@@ -26,18 +26,20 @@ async function askDemoAssistant(input: {
     subjectCode: s.subjectCode, subjectName: s.subjectName, faculty: s.faculty, facultyEmail: s.facultyEmail, room: s.room, isLab: s.isLab,
   }));
   const rooms = input.rooms.map((r) => ({ name: r.name, type: r.type, capacity: r.capacity }));
+  // Failures throw (like the server API does) so the chat can mark them and offer a retry.
+  let res: Response;
   try {
-    const res = await fetch(`${ASSISTANT_BASE}/api/assistant/demo`, {
+    res = await fetch(`${ASSISTANT_BASE}/api/assistant/demo`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ question: input.question, history: input.history, sessions, rooms, user: input.user }),
     });
-    const data = (await res.json().catch(() => ({}))) as { answer?: string; intent?: string; error?: string };
-    if (!res.ok) return { answer: data.error ?? ASSISTANT_OFFLINE };
-    return { answer: data.answer ?? ASSISTANT_OFFLINE, intent: data.intent };
   } catch {
-    return { answer: ASSISTANT_OFFLINE };
+    throw new HttpError(503, ASSISTANT_OFFLINE);
   }
+  const data = (await res.json().catch(() => ({}))) as { answer?: string; intent?: string; error?: string };
+  if (!res.ok || !data.answer) throw new HttpError(res.ok ? 502 : res.status, data.error ?? ASSISTANT_OFFLINE);
+  return { answer: data.answer, intent: data.intent };
 }
 
 type Row = Record<string, unknown> & { id: number };
