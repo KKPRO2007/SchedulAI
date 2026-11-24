@@ -200,6 +200,12 @@ export default function Scene3D({ variant = 'app' }: { variant?: Variant }) {
         rig.scale.setScalar(w < 900 ? 0.6 : 1);
       }
       if (variant === 'auth') rig.position.x = w < 900 ? 0 : 3.2;
+      // Inside the app the shapes sit behind translucent cards; on narrow screens they
+      // would cover content, so only the soft light layers remain.
+      if (variant === 'app') {
+        rig.visible = w >= 1024;
+        for (const sat of sats) sat.visible = w >= 1024;
+      }
       camera.updateProjectionMatrix();
     };
     const ro = new ResizeObserver(resize);
@@ -292,7 +298,7 @@ export default function Scene3D({ variant = 'app' }: { variant?: Variant }) {
     <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden" aria-hidden="true">
       {/* CSS aurora layers under the canvas; also the fallback when WebGL is unavailable */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_70%_0%,rgba(124,92,255,0.28),transparent_60%),radial-gradient(ellipse_60%_50%_at_0%_100%,rgba(34,184,240,0.18),transparent_60%),radial-gradient(ellipse_50%_40%_at_100%_80%,rgba(232,121,249,0.12),transparent_60%)]" />
-      <div ref={host} className="absolute inset-0" />
+      <div ref={host} className={`absolute inset-0 ${variant === 'app' ? 'opacity-45' : ''}`} />
       <div className="noise absolute inset-0" />
       <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#04050c] to-transparent" />
     </div>
