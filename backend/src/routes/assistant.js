@@ -37,7 +37,7 @@ router.post("/ask", async (req, res) => {
         `);
 
         if (result.rows.length === 0) {
-            return res.json({ answer: "No published timetable found.", provider: 'none' });
+            return res.json({ answer: "No published timetable found." });
         }
 
         const allSessions = result.rows[0].payload?.sessions || [];
@@ -45,7 +45,7 @@ router.post("/ask", async (req, res) => {
         const sessions = scopeSessions(allSessions, user);
 
         if (user.role === 'student' && !user.section) {
-            return res.json({ answer: "I couldn't find your section. Please sign out and sign in again.", provider: 'none' });
+            return res.json({ answer: "I couldn't find your section. Please sign out and sign in again." });
         }
 
         const rooms = await pool
@@ -53,9 +53,9 @@ router.post("/ask", async (req, res) => {
             .then((r) => r.rows)
             .catch(() => []);
 
-        const { answer, provider, intent } = await answerQuestion({ question, sessions, allSessions, rooms, user, history });
+        const { answer, intent } = await answerQuestion({ question, sessions, allSessions, rooms, user, history });
 
-        res.json({ answer, provider, intent });
+        res.json({ answer, intent });
     } catch (error) {
         console.error("AI Assistant Error:", error);
 

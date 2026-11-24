@@ -73,10 +73,10 @@ router.post('/', async (req, res) => {
     const roomList = Array.isArray(rooms) ? rooms.slice(0, MAX_ROOMS).map(cleanRoom).filter(Boolean) : [];
     const scoped = scopeSessions(allSessions, viewer);
 
-    const { answer, provider, intent } = await answerQuestion({
+    const { answer, intent } = await answerQuestion({
       question, sessions: scoped, allSessions, rooms: roomList, user: viewer, history,
     });
-    res.json({ answer, provider, intent });
+    res.json({ answer, intent });
   } catch (error) {
     console.error('AI Assistant (demo) Error:', error);
     res.status(500).json({ error: 'Something went wrong' });

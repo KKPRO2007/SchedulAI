@@ -373,6 +373,10 @@ body {
     linear-gradient(var(--surface), var(--surface)) padding-box,
     linear-gradient(140deg, rgba(56, 189, 248, 0.35), rgba(148, 163, 255, 0.08) 35%, rgba(148, 163, 255, 0.08) 65%, rgba(192, 132, 252, 0.3)) border-box;
 }
+/* The composer shows focus with its glowing border, so the field inside needs no second outline. */
+.ai-composer textarea:focus-visible {
+  outline: none;
+}
 .ai-composer:focus-within {
   box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.07), 0 0 32px rgba(99, 102, 241, 0.18);
 }
