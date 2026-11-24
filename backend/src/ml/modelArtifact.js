@@ -1,7 +1,7 @@
-const REQUIRED_INTENTS = ['all', 'day', 'faculty', 'room', 'subject'];
+const REQUIRED_INTENTS = ['all', 'day', 'faculty', 'free', 'room', 'subject', 'workload'];
 const MODEL_FORMAT_VERSION = 2;
 const MODEL_ALGORITHM = 'multinomial-naive-bayes';
-const FEATURE_EXTRACTOR = 'normalized-unigrams-v1';
+const FEATURE_EXTRACTOR = 'normalized-unigrams-v2';
 
 export function validateAssistantModel(model) {
   if (!model || typeof model !== 'object' || Array.isArray(model)) {
